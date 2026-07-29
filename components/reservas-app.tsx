@@ -147,7 +147,7 @@ export function ReservasApp() {
             <Button
               onClick={handleConcluir}
               disabled={!podeEnviar}
-              className="gap-2"
+              className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
               aria-label="Concluir e enviar pelo WhatsApp"
             >
               <Send className="size-4" aria-hidden="true" />
