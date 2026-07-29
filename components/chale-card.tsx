@@ -23,8 +23,8 @@ export function ChaleCard({ chale, onChange, onLimpar }: ChaleCardProps) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border bg-card p-5 transition-colors",
-        ativo ? "border-primary/60 shadow-sm" : "border-border",
+        "flex flex-col gap-4 rounded-2xl border p-5 transition-colors",
+        ativo ? "border-accent bg-accent shadow-sm" : "border-border bg-card",
       )}
     >
       <div className="flex items-center justify-between">
