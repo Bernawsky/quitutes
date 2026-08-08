@@ -10,7 +10,7 @@ export async function salvarPedido(input: {
   unidades: UnidadePedido[]
 }) {
   const totalUnidades = input.unidades.length
-  const totalItens = input.unidades.reduce((acc, u) => acc + contarItens(u.observacoes), 0)
+  const totalItens = input.unidades.reduce((acc, u) => acc + contarItens(u.itens), 0)
   const totalPessoas = input.unidades.reduce((acc, u) => acc + (u.pessoas || 0), 0)
 
   await sql`

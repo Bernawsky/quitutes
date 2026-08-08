@@ -5,7 +5,7 @@ import { ShoppingBasket, Send, MessageCircle, BarChart3, Copy, Check } from "luc
 import Link from "next/link"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { Button } from "@/components/ui/button"
-import { LINK_GRUPO, type UnidadePedido } from "@/lib/pedidos"
+import { LINK_GRUPO, descreverItens, type UnidadePedido } from "@/lib/pedidos"
 import { salvarPedido } from "@/app/actions/pedidos"
 
 function dataHoje() {
@@ -21,9 +21,9 @@ function criarUnidades(): Unidade[] {
     nome: `Chalé ${i + 1}`,
     horario: "",
     pessoas: 0,
-    observacoes: [] as string[],
+    itens: {} as Record<string, number>,
   }))
-  return [...chales, { id: 11, nome: "Suíte", isSuite: true, horario: "", pessoas: 0, observacoes: [] }]
+  return [...chales, { id: 11, nome: "Suíte", isSuite: true, horario: "", pessoas: 0, itens: {} }]
 }
 
 export function ReservasApp() {
@@ -42,24 +42,21 @@ export function ReservasApp() {
     setCopiado(false)
   }
 
-  const handleToggleObs = (id: number, obs: string) => {
+  const handleItem = (id: number, key: string, qtd: number) => {
     setUnidades((prev) =>
-      prev.map((u) =>
-        u.id === id
-          ? {
-              ...u,
-              observacoes: u.observacoes.includes(obs)
-                ? u.observacoes.filter((o) => o !== obs)
-                : [...u.observacoes, obs],
-            }
-          : u,
-      ),
+      prev.map((u) => {
+        if (u.id !== id) return u
+        const itens = { ...u.itens }
+        if (qtd > 0) itens[key] = qtd
+        else delete itens[key]
+        return { ...u, itens }
+      }),
     )
     setCopiado(false)
   }
 
   const handleLimpar = (id: number) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, observacoes: [] } : u)))
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, itens: {} } : u)))
   }
 
   const handleLimparTudo = () => {
@@ -68,7 +65,10 @@ export function ReservasApp() {
   }
 
   const unidadesAtivas = useMemo(
-    () => unidades.filter((u) => u.horario || u.pessoas > 0 || u.observacoes.length > 0),
+    () =>
+      unidades.filter(
+        (u) => u.horario || u.pessoas > 0 || Object.values(u.itens).some((q) => q > 0),
+      ),
     [unidades],
   )
 
@@ -79,9 +79,11 @@ export function ReservasApp() {
     for (const u of unidadesAtivas) {
       const partes: string[] = [u.nome]
       if (u.horario) partes.push(`às ${u.horario}`)
+      const detalhes: string[] = []
+      if (u.pessoas > 0) detalhes.push(`${u.pessoas} ${u.pessoas === 1 ? "pessoa" : "pessoas"}`)
+      detalhes.push(...descreverItens(u.itens))
       let linha = partes.join(" ")
-      if (u.pessoas > 0) linha += ` — ${u.pessoas} ${u.pessoas === 1 ? "pessoa" : "pessoas"}`
-      if (u.observacoes.length > 0) linha += `${u.pessoas > 0 ? "," : " —"} ${u.observacoes.join(", ")}`
+      if (detalhes.length > 0) linha += ` — ${detalhes.join(", ")}`
       linhas.push(linha)
     }
 
@@ -107,7 +109,7 @@ export function ReservasApp() {
         unidade: u.nome,
         horario: u.horario,
         pessoas: u.pessoas,
-        observacoes: u.observacoes,
+        itens: u.itens,
       }))
       await salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload })
 
@@ -158,7 +160,7 @@ export function ReservasApp() {
               unidade={unidade}
               onHorario={handleHorario}
               onPessoas={handlePessoas}
-              onToggleObs={handleToggleObs}
+              onItem={handleItem}
               onLimpar={handleLimpar}
             />
           ))}

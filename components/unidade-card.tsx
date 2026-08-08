@@ -1,8 +1,16 @@
-aça c"use client"
+"use client"
 
-import { Clock, Check, X, BedDouble, Users, Minus, Plus } from "lucide-react"
+import { Clock, Check, X, BedDouble, Users, Minus, Plus, Coffee, Citrus, Leaf, Flame, Egg } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { HORARIOS, OBSERVACOES } from "@/lib/pedidos"
+import { HORARIOS, ITENS, type Itens } from "@/lib/pedidos"
+
+const ICONES: Record<string, typeof Coffee> = {
+  cafe: Coffee,
+  suco: Citrus,
+  cha: Leaf,
+  aguaQuente: Flame,
+  ovos: Egg,
+}
 
 export type Unidade = {
   id: number
@@ -10,19 +18,55 @@ export type Unidade = {
   isSuite?: boolean
   horario: string
   pessoas: number
-  observacoes: string[]
+  itens: Itens
 }
 
 type UnidadeCardProps = {
   unidade: Unidade
   onHorario: (id: number, horario: string) => void
   onPessoas: (id: number, pessoas: number) => void
-  onToggleObs: (id: number, obs: string) => void
+  onItem: (id: number, key: string, qtd: number) => void
   onLimpar: (id: number) => void
 }
 
-export function UnidadeCard({ unidade, onHorario, onPessoas, onToggleObs, onLimpar }: UnidadeCardProps) {
-  const ativo = Boolean(unidade.horario || unidade.pessoas > 0 || unidade.observacoes.length > 0)
+function Stepper({
+  valor,
+  onChange,
+  rotulo,
+}: {
+  valor: number
+  onChange: (v: number) => void
+  rotulo: string
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        type="button"
+        onClick={() => onChange(Math.max(0, valor - 1))}
+        disabled={valor <= 0}
+        aria-label={`Diminuir ${rotulo}`}
+        className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Minus className="size-4" aria-hidden="true" />
+      </button>
+      <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground" aria-live="polite">
+        {valor}
+      </span>
+      <button
+        type="button"
+        onClick={() => onChange(valor + 1)}
+        aria-label={`Aumentar ${rotulo}`}
+        className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50"
+      >
+        <Plus className="size-4" aria-hidden="true" />
+      </button>
+    </div>
+  )
+}
+
+export function UnidadeCard({ unidade, onHorario, onPessoas, onItem, onLimpar }: UnidadeCardProps) {
+  const totalItens = Object.values(unidade.itens).reduce((a, b) => a + (b || 0), 0)
+  const ativo = Boolean(unidade.horario || unidade.pessoas > 0 || totalItens > 0)
 
   return (
     <div
@@ -88,68 +132,48 @@ export function UnidadeCard({ unidade, onHorario, onPessoas, onToggleObs, onLimp
       </div>
 
       {/* Pessoas para o café */}
-      <div className="flex items-center justify-between gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-          <Users className="size-3.5" aria-hidden="true" />
+      <div className="flex items-center justify-between gap-2 rounded-lg border border-input bg-background px-3 py-2">
+        <span className="flex items-center gap-2 text-sm font-medium text-foreground">
+          <Users className="size-4 text-primary" aria-hidden="true" />
           Pessoas no café
         </span>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => onPessoas(unidade.id, Math.max(0, unidade.pessoas - 1))}
-            disabled={unidade.pessoas <= 0}
-            aria-label={`Diminuir pessoas ${unidade.nome}`}
-            className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            <Minus className="size-4" aria-hidden="true" />
-          </button>
-          <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground" aria-live="polite">
-            {unidade.pessoas}
-          </span>
-          <button
-            type="button"
-            onClick={() => onPessoas(unidade.id, unidade.pessoas + 1)}
-            aria-label={`Aumentar pessoas ${unidade.nome}`}
-            className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50"
-          >
-            <Plus className="size-4" aria-hidden="true" />
-          </button>
-        </div>
+        <Stepper
+          valor={unidade.pessoas}
+          onChange={(v) => onPessoas(unidade.id, v)}
+          rotulo={`pessoas ${unidade.nome}`}
+        />
       </div>
 
-      {/* Observações */}
+      {/* Itens */}
       <fieldset className="flex flex-col gap-1.5">
-        <legend className="text-xs font-medium text-muted-foreground">Observações</legend>
+        <legend className="text-xs font-medium text-muted-foreground">Itens</legend>
         <div className="flex flex-col gap-1.5">
-          {OBSERVACOES.map((obs) => {
-            const marcado = unidade.observacoes.includes(obs)
+          {ITENS.map((it) => {
+            const Icone = ICONES[it.key]
+            const qtd = unidade.itens[it.key] ?? 0
             return (
-              <label
-                key={obs}
+              <div
+                key={it.key}
                 className={cn(
-                  "flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
-                  marcado
-                    ? "border-primary bg-primary/10 text-foreground"
-                    : "border-input bg-background text-foreground hover:border-primary/40",
+                  "flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
+                  qtd > 0 ? "border-primary/40 bg-primary/10 text-foreground" : "border-input bg-background text-foreground",
                 )}
               >
-                <span
-                  className={cn(
-                    "flex size-4 shrink-0 items-center justify-center rounded border transition-colors",
-                    marcado ? "border-primary bg-primary text-primary-foreground" : "border-input bg-background",
+                <span className="flex items-center gap-2">
+                  {Icone && (
+                    <Icone
+                      className={cn("size-4 shrink-0", qtd > 0 ? "text-primary" : "text-muted-foreground")}
+                      aria-hidden="true"
+                    />
                   )}
-                  aria-hidden="true"
-                >
-                  {marcado && <Check className="size-3" strokeWidth={3} />}
+                  {it.label}
                 </span>
-                <input
-                  type="checkbox"
-                  className="sr-only"
-                  checked={marcado}
-                  onChange={() => onToggleObs(unidade.id, obs)}
+                <Stepper
+                  valor={qtd}
+                  onChange={(v) => onItem(unidade.id, it.key, v)}
+                  rotulo={`${it.label} ${unidade.nome}`}
                 />
-                {obs}
-              </label>
+              </div>
             )
           })}
         </div>
