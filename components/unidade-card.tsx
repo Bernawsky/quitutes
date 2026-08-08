@@ -1,6 +1,6 @@
 "use client"
 
-import { Clock, Check, X, BedDouble } from "lucide-react"
+import { Clock, Check, X, BedDouble, Users, Minus, Plus } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { HORARIOS, OBSERVACOES } from "@/lib/pedidos"
 
@@ -9,18 +9,20 @@ export type Unidade = {
   nome: string
   isSuite?: boolean
   horario: string
+  pessoas: number
   observacoes: string[]
 }
 
 type UnidadeCardProps = {
   unidade: Unidade
   onHorario: (id: number, horario: string) => void
+  onPessoas: (id: number, pessoas: number) => void
   onToggleObs: (id: number, obs: string) => void
   onLimpar: (id: number) => void
 }
 
-export function UnidadeCard({ unidade, onHorario, onToggleObs, onLimpar }: UnidadeCardProps) {
-  const ativo = Boolean(unidade.horario || unidade.observacoes.length > 0)
+export function UnidadeCard({ unidade, onHorario, onPessoas, onToggleObs, onLimpar }: UnidadeCardProps) {
+  const ativo = Boolean(unidade.horario || unidade.pessoas > 0 || unidade.observacoes.length > 0)
 
   return (
     <div
@@ -82,6 +84,36 @@ export function UnidadeCard({ unidade, onHorario, onToggleObs, onLimpar }: Unida
               </button>
             )
           })}
+        </div>
+      </div>
+
+      {/* Pessoas para o café */}
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          <Users className="size-3.5" aria-hidden="true" />
+          Pessoas no café
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => onPessoas(unidade.id, Math.max(0, unidade.pessoas - 1))}
+            disabled={unidade.pessoas <= 0}
+            aria-label={`Diminuir pessoas ${unidade.nome}`}
+            className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            <Minus className="size-4" aria-hidden="true" />
+          </button>
+          <span className="w-6 text-center text-sm font-semibold tabular-nums text-foreground" aria-live="polite">
+            {unidade.pessoas}
+          </span>
+          <button
+            type="button"
+            onClick={() => onPessoas(unidade.id, unidade.pessoas + 1)}
+            aria-label={`Aumentar pessoas ${unidade.nome}`}
+            className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50"
+          >
+            <Plus className="size-4" aria-hidden="true" />
+          </button>
         </div>
       </div>
 

@@ -27,6 +27,7 @@ export function contarItens(observacoes: string[]): number {
 export type UnidadePedido = {
   unidade: string
   horario: string
+  pessoas: number
   observacoes: string[]
 }
 
@@ -38,4 +39,5 @@ export type Pedido = {
   unidades: UnidadePedido[]
   total_unidades: number
   total_itens: number
+  total_pessoas: number
 }

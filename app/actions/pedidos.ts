@@ -11,15 +11,17 @@ export async function salvarPedido(input: {
 }) {
   const totalUnidades = input.unidades.length
   const totalItens = input.unidades.reduce((acc, u) => acc + contarItens(u.observacoes), 0)
+  const totalPessoas = input.unidades.reduce((acc, u) => acc + (u.pessoas || 0), 0)
 
   await sql`
-    INSERT INTO pedidos (titulo, saudacao, unidades, total_unidades, total_itens)
+    INSERT INTO pedidos (titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas)
     VALUES (
       ${input.titulo},
       ${input.saudacao},
       ${JSON.stringify(input.unidades)}::jsonb,
       ${totalUnidades},
-      ${totalItens}
+      ${totalItens},
+      ${totalPessoas}
     )
   `
 
@@ -28,7 +30,7 @@ export async function salvarPedido(input: {
 
 export async function getPedidos(): Promise<Pedido[]> {
   const rows = await sql`
-    SELECT id, created_at, titulo, saudacao, unidades, total_unidades, total_itens
+    SELECT id, created_at, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas
     FROM pedidos
     ORDER BY created_at DESC
   `

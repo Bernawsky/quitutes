@@ -20,9 +20,10 @@ function criarUnidades(): Unidade[] {
     id: i + 1,
     nome: `Chalé ${i + 1}`,
     horario: "",
+    pessoas: 0,
     observacoes: [] as string[],
   }))
-  return [...chales, { id: 11, nome: "Suíte", isSuite: true, horario: "", observacoes: [] }]
+  return [...chales, { id: 11, nome: "Suíte", isSuite: true, horario: "", pessoas: 0, observacoes: [] }]
 }
 
 export function ReservasApp() {
@@ -33,6 +34,11 @@ export function ReservasApp() {
 
   const handleHorario = (id: number, horario: string) => {
     setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario } : u)))
+    setCopiado(false)
+  }
+
+  const handlePessoas = (id: number, pessoas: number) => {
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, pessoas } : u)))
     setCopiado(false)
   }
 
@@ -53,7 +59,7 @@ export function ReservasApp() {
   }
 
   const handleLimpar = (id: number) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", observacoes: [] } : u)))
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, observacoes: [] } : u)))
   }
 
   const handleLimparTudo = () => {
@@ -62,7 +68,7 @@ export function ReservasApp() {
   }
 
   const unidadesAtivas = useMemo(
-    () => unidades.filter((u) => u.horario || u.observacoes.length > 0),
+    () => unidades.filter((u) => u.horario || u.pessoas > 0 || u.observacoes.length > 0),
     [unidades],
   )
 
@@ -74,7 +80,8 @@ export function ReservasApp() {
       const partes: string[] = [u.nome]
       if (u.horario) partes.push(`às ${u.horario}`)
       let linha = partes.join(" ")
-      if (u.observacoes.length > 0) linha += ` — ${u.observacoes.join(", ")}`
+      if (u.pessoas > 0) linha += ` — ${u.pessoas} ${u.pessoas === 1 ? "pessoa" : "pessoas"}`
+      if (u.observacoes.length > 0) linha += `${u.pessoas > 0 ? "," : " —"} ${u.observacoes.join(", ")}`
       linhas.push(linha)
     }
 
@@ -99,6 +106,7 @@ export function ReservasApp() {
       const payload: UnidadePedido[] = unidadesAtivas.map((u) => ({
         unidade: u.nome,
         horario: u.horario,
+        pessoas: u.pessoas,
         observacoes: u.observacoes,
       }))
       await salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload })
@@ -149,6 +157,7 @@ export function ReservasApp() {
               key={unidade.id}
               unidade={unidade}
               onHorario={handleHorario}
+              onPessoas={handlePessoas}
               onToggleObs={handleToggleObs}
               onLimpar={handleLimpar}
             />
