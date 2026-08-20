@@ -5,17 +5,20 @@ __v0_jsx-dev-runtime.ts
 .snowflake/
 .v0-trash/
 .vercel/
-
 # Environment variables
 .env*.local
-
 # Common ignores
 node_modules
 .next/
 .DS_Store
-
 # whatsapp-service (open-wa)
 whatsapp-service/.env
 whatsapp-service/*.data.json
 whatsapp-service/tokens/
 whatsapp-service/*.session
+
+# managed by open-wa
+**.data.json
+**.node-persist**
+**_IGNORE_**
+# end managed by open-wa
