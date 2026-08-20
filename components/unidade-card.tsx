@@ -173,8 +173,10 @@ export function UnidadeCard({
           aria-label={`Horário ${unidade.nome}${horarios.length > 1 ? " (obrigatório)" : ""}`}
         >
           {horarios.map((h) => {
-            const selecionado = unidade.horario === h
             const fixo = horarios.length === 1
+            // Horário fixo: sempre aparece destacado, mesmo antes de a unidade ter algo preenchido
+            // (o valor só é gravado no estado quando a cesta passa a ser usada).
+            const selecionado = fixo || unidade.horario === h
             return (
               <button
                 key={h}

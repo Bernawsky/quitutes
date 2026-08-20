@@ -9,21 +9,26 @@ import { LINK_GRUPO, dataSaudacao, gerarMensagem, type UnidadePedido } from "@/l
 import { salvarPedido } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
-function horarioPadrao(pousada: Pousada): string {
-  return pousada.horarios.length === 1 ? pousada.horarios[0]! : ""
-}
-
 function criarUnidades(pousada: Pousada): Unidade[] {
   return pousada.unidades.map((u, i) => ({
     id: i + 1,
     nome: u.nome,
     ...(u.isSuite ? { isSuite: true } : {}),
-    horario: horarioPadrao(pousada),
+    horario: "",
     pessoas: 0,
     itens: {} as Record<string, number>,
     dietas: [] as string[],
     observacao: "",
   }))
+}
+
+/**
+ * Pousadas com um único horário disponível têm o horário fixo: só é gravado no
+ * estado da unidade quando ela passa a ter algo preenchido (evita que todas as
+ * unidades apareçam como "ativas" só porque o horário já vem definido).
+ */
+function comHorarioFixo(pousada: Pousada, u: Unidade): string {
+  return pousada.horarios.length === 1 && !u.horario ? pousada.horarios[0]! : u.horario
 }
 
 /**
@@ -75,7 +80,9 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
   }
 
   const handlePessoas = (id: number, pessoas: number) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, pessoas } : u)))
+    setUnidades((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, pessoas, horario: pessoas > 0 ? comHorarioFixo(pousada, u) : u.horario } : u)),
+    )
     setCopiado(false)
   }
 
@@ -86,7 +93,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
         const itens = { ...u.itens }
         if (qtd > 0) itens[key] = qtd
         else delete itens[key]
-        return { ...u, itens }
+        return { ...u, itens, horario: qtd > 0 ? comHorarioFixo(pousada, u) : u.horario }
       }),
     )
     setCopiado(false)
@@ -97,21 +104,21 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       prev.map((u) => {
         if (u.id !== id) return u
         const dietas = ativo ? Array.from(new Set([...(u.dietas ?? []), key])) : (u.dietas ?? []).filter((d) => d !== key)
-        return { ...u, dietas }
+        return { ...u, dietas, horario: ativo ? comHorarioFixo(pousada, u) : u.horario }
       }),
     )
     setCopiado(false)
   }
 
   const handleObservacao = (id: number, texto: string) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, observacao: texto } : u)))
+    setUnidades((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, observacao: texto, horario: texto.trim() ? comHorarioFixo(pousada, u) : u.horario } : u)),
+    )
     setCopiado(false)
   }
 
   const handleLimpar = (id: number) => {
-    setUnidades((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, horario: horarioPadrao(pousada), pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)),
-    )
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)))
   }
 
   const handleLimparTudo = () => {
