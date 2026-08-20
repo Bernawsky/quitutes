@@ -1,0 +1,15 @@
+{
+  "name": "quitutes-whatsapp-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Servidor HTTP que expõe uma sessão do WhatsApp Web (via open-wa) para envio de mensagens automatizadas.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@open-wa/wa-automate": "^4.63.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}

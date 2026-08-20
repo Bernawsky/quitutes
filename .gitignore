@@ -13,3 +13,9 @@ __v0_jsx-dev-runtime.ts
 node_modules
 .next/
 .DS_Store
+
+# whatsapp-service (open-wa)
+whatsapp-service/.env
+whatsapp-service/*.data.json
+whatsapp-service/tokens/
+whatsapp-service/*.session
