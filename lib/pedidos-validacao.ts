@@ -35,7 +35,7 @@ export function validarUnidades(unidades: unknown): UnidadeValidada[] {
       if (Number.isInteger(qtd) && qtd > 0 && qtd <= 99) itens[k] = qtd
     }
 
-    const dietas = Array.isArray(u?.dietas) ? u.dietas.filter((d): d is string => typeof d === "string").slice(0, 3) : []
+    const dietas = Array.isArray(u?.dietas) ? u.dietas.filter((d): d is string => typeof d === "string").slice(0, 4) : []
 
     const observacao = String(u?.observacao ?? "").trim().slice(0, 280)
 

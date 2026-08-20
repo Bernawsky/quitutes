@@ -48,6 +48,11 @@ export function PousadaLogin({ onEntrar, pousadaFixa }: Props) {
 
   const admin = ADMINS.find((a) => a.valor === selecionado)
 
+  const rotulos: Record<string, string> = {
+    ...Object.fromEntries(POUSADAS.map((p) => [p.slug, p.nome])),
+    ...Object.fromEntries(ADMINS.map((a) => [a.valor, a.nome])),
+  }
+
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault()
     if (enviando) return
@@ -92,7 +97,9 @@ export function PousadaLogin({ onEntrar, pousadaFixa }: Props) {
             <span className="text-xs font-medium text-muted-foreground">Usuário</span>
             <Select value={selecionado} onValueChange={(v) => setSelecionado(v ?? "")} disabled={Boolean(pousadaFixa)}>
               <SelectTrigger className="h-11 w-full rounded-lg border-input bg-background text-sm">
-                <SelectValue placeholder="Escolha sua pousada" />
+                <SelectValue placeholder="Escolha sua pousada">
+                  {(valor: string | null) => (valor ? (rotulos[valor] ?? valor) : "Escolha sua pousada")}
+                </SelectValue>
               </SelectTrigger>
               <SelectContent className="rounded-xl border-border">
                 <SelectGroup>

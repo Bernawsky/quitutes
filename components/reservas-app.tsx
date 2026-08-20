@@ -1,8 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, BarChart3 } from "lucide-react"
-import Link from "next/link"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut } from "lucide-react"
 import { toast } from "sonner"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { Button } from "@/components/ui/button"
@@ -10,12 +9,16 @@ import { LINK_GRUPO, dataSaudacao, gerarMensagem, type UnidadePedido } from "@/l
 import { salvarPedido } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
+function horarioPadrao(pousada: Pousada): string {
+  return pousada.horarios.length === 1 ? pousada.horarios[0]! : ""
+}
+
 function criarUnidades(pousada: Pousada): Unidade[] {
   return pousada.unidades.map((u, i) => ({
     id: i + 1,
     nome: u.nome,
     ...(u.isSuite ? { isSuite: true } : {}),
-    horario: "",
+    horario: horarioPadrao(pousada),
     pessoas: 0,
     itens: {} as Record<string, number>,
     dietas: [] as string[],
@@ -106,7 +109,9 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
   }
 
   const handleLimpar = (id: number) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)))
+    setUnidades((prev) =>
+      prev.map((u) => (u.id === id ? { ...u, horario: horarioPadrao(pousada), pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)),
+    )
   }
 
   const handleLimparTudo = () => {
@@ -245,6 +250,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
             <UnidadeCard
               key={unidade.id}
               unidade={unidade}
+              horarios={pousada.horarios}
               mostrarErros={mostrarErros || unidadesInvalidas.length > 0}
               onHorario={handleHorario}
               onPessoas={handlePessoas}
@@ -256,15 +262,6 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
           ))}
         </div>
       </main>
-
-      <Link
-        href="/auth"
-        className="fixed bottom-24 right-4 z-10 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-lg transition-colors hover:bg-secondary sm:bottom-28"
-        aria-label="Área administrativa"
-      >
-        <BarChart3 className="size-4 text-primary" aria-hidden="true" />
-        Administração
-      </Link>
 
       <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">

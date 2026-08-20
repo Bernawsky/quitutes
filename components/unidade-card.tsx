@@ -16,11 +16,12 @@ import {
   AlertCircle,
   MessageSquare,
   Sprout,
+  Salad,
   Wheat,
   Milk,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { HORARIOS, ITENS, DIETAS, type Itens } from "@/lib/pedidos"
+import { ITENS, DIETAS, type Itens } from "@/lib/pedidos"
 
 const ICONES: Record<string, typeof Coffee> = {
   cafe: Coffee,
@@ -32,6 +33,7 @@ const ICONES: Record<string, typeof Coffee> = {
 
 const ICONES_DIETA: Record<string, typeof Coffee> = {
   vegana: Sprout,
+  vegetariana: Salad,
   semGluten: Wheat,
   semLactose: Milk,
 }
@@ -49,6 +51,8 @@ export type Unidade = {
 
 type UnidadeCardProps = {
   unidade: Unidade
+  /** Horários disponíveis para a pousada desta unidade. Quando há só um, fica fixo/selecionado. */
+  horarios: readonly string[]
   mostrarErros?: boolean
   onHorario: (id: number, horario: string) => void
   onPessoas: (id: number, pessoas: number) => void
@@ -100,6 +104,7 @@ function Stepper({
 
 export function UnidadeCard({
   unidade,
+  horarios,
   mostrarErros = false,
   onHorario,
   onPessoas,
@@ -153,32 +158,38 @@ export function UnidadeCard({
         )}
       </div>
 
-      {/* Horário (obrigatório quando a unidade está selecionada) */}
+      {/* Horário (obrigatório quando a unidade está selecionada; fixo quando a pousada só tem um) */}
       <div className="flex flex-col gap-1.5">
         <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
           <Clock className="size-3.5" aria-hidden="true" />
-          Horário <span aria-hidden="true">*</span>
+          Horário {horarios.length > 1 && <span aria-hidden="true">*</span>}
+          {horarios.length === 1 && <span className="font-normal">(fixo)</span>}
         </span>
         <div
-          className="grid grid-cols-2 gap-2"
+          className={cn("grid gap-2", horarios.length > 1 ? "grid-cols-2" : "grid-cols-1")}
           role="radiogroup"
           aria-required="true"
           aria-invalid={exibirErro && erroHorario}
-          aria-label={`Horário ${unidade.nome} (obrigatório)`}
+          aria-label={`Horário ${unidade.nome}${horarios.length > 1 ? " (obrigatório)" : ""}`}
         >
-          {HORARIOS.map((h) => {
+          {horarios.map((h) => {
             const selecionado = unidade.horario === h
+            const fixo = horarios.length === 1
             return (
               <button
                 key={h}
                 type="button"
                 role="radio"
                 aria-checked={selecionado}
-                onClick={() => onHorario(unidade.id, selecionado ? "" : h)}
+                disabled={fixo}
+                onClick={() => {
+                  if (fixo) return
+                  onHorario(unidade.id, selecionado ? "" : h)
+                }}
                 className={cn(
                   "rounded-lg border px-3 py-2 text-sm font-bold transition-colors",
                   selecionado
-                    ? "border-primary bg-primary text-primary-foreground"
+                    ? "border-primary bg-primary text-primary-foreground disabled:opacity-100"
                     : mostrarErros && erroHorario
                       ? "border-destructive bg-background text-foreground hover:border-destructive"
                       : "border-input bg-background text-foreground hover:border-primary/50",

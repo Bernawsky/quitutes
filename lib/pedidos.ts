@@ -1,4 +1,5 @@
-export const HORARIOS = ["6:30", "8:00"] as const
+// União de todos os horários possíveis entre pousadas (cada pousada usa um subconjunto, ver lib/pousadas.ts).
+export const HORARIOS = ["6:30", "7:00", "8:00", "8:30", "9:00"] as const
 export type Horario = (typeof HORARIOS)[number]
 
 export const ITENS = [
@@ -14,6 +15,7 @@ export type Itens = Record<string, number>
 // Opções de cesta especial (aparecem em negrito na mensagem do WhatsApp)
 export const DIETAS = [
   { key: "vegana", label: "Cesta vegana" },
+  { key: "vegetariana", label: "Cesta vegetariana" },
   { key: "semGluten", label: "Cesta sem glúten" },
   { key: "semLactose", label: "Cesta sem lactose" },
 ] as const
@@ -23,9 +25,15 @@ export const LINK_GRUPO = "https://chat.whatsapp.com/JBiJEQHZATBBhfA3e9ji3p"
 
 // Normaliza horários antigos ("6:30hrs", "8hrs") para o novo formato
 export function normalizarHorario(horario: string): string {
-  const h = (horario ?? "").trim().toLowerCase().replace("hrs", "").replace("h", "").trim()
+  const bruto = (horario ?? "").trim()
+  if ((HORARIOS as readonly string[]).includes(bruto)) return bruto
+
+  const h = bruto.toLowerCase().replace("hrs", "").replace("h", "").trim()
   if (h.startsWith("6")) return "6:30"
+  if (h.startsWith("7")) return "7:00"
+  if (h.startsWith("8:3") || h.startsWith("8.3") || h === "830") return "8:30"
   if (h.startsWith("8")) return "8:00"
+  if (h.startsWith("9")) return "9:00"
   return horario
 }
 

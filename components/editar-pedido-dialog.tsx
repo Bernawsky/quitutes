@@ -7,7 +7,8 @@ import { Button } from "@/components/ui/button"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { copiarTexto } from "@/components/reservas-app"
 import { editarPedido } from "@/app/actions/pedidos-admin"
-import { LINK_GRUPO, gerarMensagemEdicao, normalizarHorario, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { HORARIOS, LINK_GRUPO, gerarMensagemEdicao, normalizarHorario, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { pousadaPorNome } from "@/lib/pousadas"
 
 function paraUnidades(pedido: Pedido): Unidade[] {
   return (pedido.unidades ?? []).map((u, i) => ({
@@ -35,6 +36,10 @@ export function EditarPedidoDialog({
   const [unidades, setUnidades] = useState<Unidade[]>(() => paraUnidades(pedido))
   const [mostrarErros, setMostrarErros] = useState(false)
   const [pending, startTransition] = useTransition()
+
+  // Restringe os horários aos da pousada do pedido; se a pousada não for encontrada
+  // (renomeada/removida), permite qualquer horário válido como fallback.
+  const horarios = pousadaPorNome(pedido.pousada)?.horarios ?? HORARIOS
 
   const invalidas = unidades.filter((u) => !u.horario || !(u.pessoas > 0))
 
@@ -117,6 +122,7 @@ export function EditarPedidoDialog({
             <UnidadeCard
               key={u.id}
               unidade={u}
+              horarios={horarios}
               mostrarErros={mostrarErros}
               onHorario={(id, horario) => atualizar(id, { horario })}
               onPessoas={(id, pessoas) => atualizar(id, { pessoas })}
