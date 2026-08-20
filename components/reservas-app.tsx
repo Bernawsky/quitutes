@@ -1,176 +1,197 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, BarChart3, Copy, Check, AlertTriangle, Boxes } from "lucide-react"
+import { useMemo, useState } from "react"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, BarChart3 } from "lucide-react"
 import Link from "next/link"
-import { PousadaCard, type PousadaPedido } from "@/components/pousada-card"
+import { toast } from "sonner"
+import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { Button } from "@/components/ui/button"
-import { LINK_GRUPO, descreverItens, type UnidadePedido } from "@/lib/pedidos"
-import { POUSADAS, HORA_LIMITE_PEDIDO } from "@/lib/pousadas"
-import { salvarPedido } from "@/app/actions/pedidos"
+import { LINK_GRUPO, dataSaudacao, gerarMensagem, type UnidadePedido } from "@/lib/pedidos"
+import { salvarPedido } from "@/lib/pedidos-api"
+import type { Pousada } from "@/lib/pousadas"
 
-function dataHoje() {
-  const d = new Date()
-  const dia = String(d.getDate()).padStart(2, "0")
-  const mes = String(d.getMonth() + 1).padStart(2, "0")
-  return `${dia}/${mes}`
-}
-
-function novoQuarto() {
-  return { quartoId: crypto.randomUUID(), quarto: "", pessoas: 0, itens: {} as Record<string, number> }
-}
-
-function criarPousadasPedido(): PousadaPedido[] {
-  return POUSADAS.map((pousada) => ({
-    pousada,
-    horario: pousada.horarioPadrao,
-    quartos: [novoQuarto()],
+function criarUnidades(pousada: Pousada): Unidade[] {
+  return pousada.unidades.map((u, i) => ({
+    id: i + 1,
+    nome: u.nome,
+    ...(u.isSuite ? { isSuite: true } : {}),
+    horario: "",
+    pessoas: 0,
+    itens: {} as Record<string, number>,
+    dietas: [] as string[],
+    observacao: "",
   }))
 }
 
-export function ReservasApp() {
-  const [saudacao, setSaudacao] = useState(`Olá cestas de café da manhã ${dataHoje()}`)
-  const [pousadas, setPousadas] = useState<PousadaPedido[]>(criarPousadasPedido)
+/**
+ * Copia de forma síncrona dentro do gesto do usuário.
+ * Usa a Clipboard API quando disponível e cai para execCommand("copy")
+ * quando o navegador bloqueia ou não suporta a API.
+ */
+export function copiarTexto(texto: string): boolean {
+  try {
+    if (typeof navigator !== "undefined" && navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(texto).catch(() => copiarFallback(texto))
+      return true
+    }
+  } catch {
+    /* segue para o fallback */
+  }
+  return copiarFallback(texto)
+}
+
+export function copiarFallback(texto: string): boolean {
+  try {
+    const area = document.createElement("textarea")
+    area.value = texto
+    area.setAttribute("readonly", "")
+    area.style.position = "fixed"
+    area.style.top = "-1000px"
+    area.style.opacity = "0"
+    document.body.appendChild(area)
+    area.select()
+    area.setSelectionRange(0, texto.length)
+    const ok = document.execCommand("copy")
+    document.body.removeChild(area)
+    return ok
+  } catch {
+    return false
+  }
+}
+
+export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
+  const [saudacao, setSaudacao] = useState(dataSaudacao())
+  const [unidades, setUnidades] = useState<Unidade[]>(() => criarUnidades(pousada))
   const [enviando, setEnviando] = useState(false)
   const [copiado, setCopiado] = useState(false)
-  const [foraDoPrazo, setForaDoPrazo] = useState(false)
+  const [mostrarErros, setMostrarErros] = useState(false)
 
-  useEffect(() => {
-    setForaDoPrazo(new Date().getHours() >= HORA_LIMITE_PEDIDO)
-  }, [])
-
-  const handleHorario = (pousadaId: string, horario: string) => {
-    setPousadas((prev) => prev.map((p) => (p.pousada.id === pousadaId ? { ...p, horario } : p)))
+  const handleHorario = (id: number, horario: string) => {
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario } : u)))
     setCopiado(false)
   }
 
-  const handleAdicionarQuarto = (pousadaId: string) => {
-    setPousadas((prev) =>
-      prev.map((p) => (p.pousada.id === pousadaId ? { ...p, quartos: [...p.quartos, novoQuarto()] } : p)),
-    )
-  }
-
-  const handleRemoverQuarto = (pousadaId: string, quartoId: string) => {
-    setPousadas((prev) =>
-      prev.map((p) =>
-        p.pousada.id === pousadaId ? { ...p, quartos: p.quartos.filter((q) => q.quartoId !== quartoId) } : p,
-      ),
-    )
-  }
-
-  const handleQuarto = (pousadaId: string, quartoId: string, quarto: string) => {
-    setPousadas((prev) =>
-      prev.map((p) =>
-        p.pousada.id === pousadaId
-          ? { ...p, quartos: p.quartos.map((q) => (q.quartoId === quartoId ? { ...q, quarto } : q)) }
-          : p,
-      ),
-    )
+  const handlePessoas = (id: number, pessoas: number) => {
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, pessoas } : u)))
     setCopiado(false)
   }
 
-  const handlePessoas = (pousadaId: string, quartoId: string, pessoas: number) => {
-    setPousadas((prev) =>
-      prev.map((p) =>
-        p.pousada.id === pousadaId
-          ? { ...p, quartos: p.quartos.map((q) => (q.quartoId === quartoId ? { ...q, pessoas } : q)) }
-          : p,
-      ),
-    )
-    setCopiado(false)
-  }
-
-  const handleItem = (pousadaId: string, quartoId: string, key: string, qtd: number) => {
-    setPousadas((prev) =>
-      prev.map((p) => {
-        if (p.pousada.id !== pousadaId) return p
-        return {
-          ...p,
-          quartos: p.quartos.map((q) => {
-            if (q.quartoId !== quartoId) return q
-            const itens = { ...q.itens }
-            if (qtd > 0) itens[key] = qtd
-            else delete itens[key]
-            return { ...q, itens }
-          }),
-        }
+  const handleItem = (id: number, key: string, qtd: number) => {
+    setUnidades((prev) =>
+      prev.map((u) => {
+        if (u.id !== id) return u
+        const itens = { ...u.itens }
+        if (qtd > 0) itens[key] = qtd
+        else delete itens[key]
+        return { ...u, itens }
       }),
     )
     setCopiado(false)
   }
 
-  const handleLimpar = (pousadaId: string) => {
-    setPousadas((prev) =>
-      prev.map((p) => (p.pousada.id === pousadaId ? { ...p, quartos: [novoQuarto()] } : p)),
+  const handleDieta = (id: number, key: string, ativo: boolean) => {
+    setUnidades((prev) =>
+      prev.map((u) => {
+        if (u.id !== id) return u
+        const dietas = ativo ? Array.from(new Set([...(u.dietas ?? []), key])) : (u.dietas ?? []).filter((d) => d !== key)
+        return { ...u, dietas }
+      }),
     )
-  }
-
-  const handleLimparTudo = () => {
-    setPousadas(criarPousadasPedido())
     setCopiado(false)
   }
 
-  const unidadesAtivas = useMemo<UnidadePedido[]>(() => {
-    const lista: UnidadePedido[] = []
-    for (const p of pousadas) {
-      for (const q of p.quartos) {
-        if (q.quarto.trim() || q.pessoas > 0 || Object.values(q.itens).some((v) => v > 0)) {
-          lista.push({
-            pousadaId: p.pousada.id,
-            pousada: p.pousada.nome,
-            quarto: q.quarto.trim(),
-            horario: p.horario,
-            pessoas: q.pessoas,
-            itens: q.itens,
-          })
-        }
-      }
+  const handleObservacao = (id: number, texto: string) => {
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, observacao: texto } : u)))
+    setCopiado(false)
+  }
+
+  const handleLimpar = (id: number) => {
+    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)))
+  }
+
+  const handleLimparTudo = () => {
+    setUnidades(criarUnidades(pousada))
+    setCopiado(false)
+    setMostrarErros(false)
+  }
+
+  const unidadesAtivas = useMemo(
+    () =>
+      unidades.filter(
+        (u) => u.horario || u.pessoas > 0 || Object.values(u.itens).some((q) => q > 0) || (u.dietas?.length ?? 0) > 0 || u.observacao?.trim(),
+      ),
+    [unidades],
+  )
+
+  // Regra: toda unidade selecionada precisa de horário E quantidade de pessoas
+  const unidadesInvalidas = useMemo(() => unidadesAtivas.filter((u) => !u.horario || !(u.pessoas > 0)), [unidadesAtivas])
+
+  const payload: UnidadePedido[] = useMemo(
+    () =>
+      unidadesAtivas.map((u) => ({
+        unidade: u.nome,
+        horario: u.horario,
+        pessoas: u.pessoas,
+        itens: u.itens,
+        dietas: u.dietas ?? [],
+        observacao: u.observacao?.trim() ?? "",
+      })),
+    [unidadesAtivas],
+  )
+
+  const mensagem = useMemo(() => gerarMensagem(saudacao, payload), [saudacao, payload])
+
+  const podeEnviar = unidadesAtivas.length > 0 && unidadesInvalidas.length === 0
+
+  const handleConcluir = () => {
+    if (enviando) return
+
+    if (unidadesAtivas.length === 0) {
+      setMostrarErros(true)
+      toast.error("Preencha ao menos uma unidade para enviar")
+      return
     }
-    return lista
-  }, [pousadas])
 
-  const mensagem = useMemo(() => {
-    const linhas: string[] = []
-    if (saudacao.trim()) linhas.push(saudacao.trim())
-
-    for (const u of unidadesAtivas) {
-      const partes: string[] = [u.pousada]
-      if (u.quarto) partes.push(`(${u.quarto})`)
-      partes.push(`às ${u.horario}`)
-      const detalhes: string[] = []
-      if (u.pessoas > 0) detalhes.push(`${u.pessoas} ${u.pessoas === 1 ? "pessoa" : "pessoas"}`)
-      detalhes.push(...descreverItens(u.itens))
-      let linha = partes.join(" ")
-      if (detalhes.length > 0) linha += ` — ${detalhes.join(", ")}`
-      linhas.push(linha)
+    // Validação obrigatória: horário e pessoas em todas as unidades selecionadas
+    if (unidadesInvalidas.length > 0) {
+      setMostrarErros(true)
+      toast.error("Preencha horário e quantidade de pessoas", {
+        description: `Pendente em: ${unidadesInvalidas.map((u) => u.nome).join(", ")}`,
+      })
+      return
     }
 
-    return linhas.join("\n")
-  }, [saudacao, unidadesAtivas])
-
-  const podeEnviar = unidadesAtivas.length > 0
-
-  const handleConcluir = async () => {
-    if (!podeEnviar || enviando) return
+    setMostrarErros(false)
     setEnviando(true)
-    try {
-      try {
-        await navigator.clipboard.writeText(mensagem)
-        setCopiado(true)
-      } catch {
-        setCopiado(false)
-      }
 
-      const { id } = await salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: unidadesAtivas })
+    // 1) Cópia acontece dentro do gesto do usuário (evita bloqueio do navegador)
+    const copiouOk = copiarTexto(mensagem)
+    setCopiado(copiouOk)
 
-      // Abre a folha de logística em A4 (com QR de feedback) já pronta para impressão.
-      window.open(`/logistica/${id}`, "_blank", "noopener,noreferrer")
-
-      // Redireciona para o grupo do WhatsApp (cole a mensagem manualmente)
-      window.open(LINK_GRUPO, "_blank", "noopener,noreferrer")
-    } finally {
-      setEnviando(false)
+    if (copiouOk) {
+      toast.success("Copiado para a área de transferência", {
+        description: "Abrindo o grupo do WhatsApp. É só colar a mensagem.",
+      })
+    } else {
+      toast.error("Não foi possível copiar automaticamente", {
+        description: "Copie a mensagem manualmente antes de enviar no grupo.",
+      })
     }
+
+    // 2) Salva o pedido para o dashboard de métricas
+    void salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload, pousada: pousada.nome })
+      .catch(() => {
+        toast.error("Não foi possível registrar o pedido nas métricas")
+      })
+      .finally(() => {
+        setEnviando(false)
+      })
+
+    // 3) Pequena pausa e redireciona para o grupo do WhatsApp
+    window.setTimeout(() => {
+      const aba = window.open(LINK_GRUPO, "_blank", "noopener,noreferrer")
+      if (!aba) window.location.href = LINK_GRUPO
+    }, 1200)
   }
 
   return (
@@ -180,26 +201,20 @@ export function ReservasApp() {
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <ShoppingBasket className="size-5" aria-hidden="true" />
           </span>
-          <div>
-            <h1 className="font-heading text-xl font-bold text-card-foreground text-balance">
-              Sistema de Pedidos
-            </h1>
-            <p className="text-sm text-muted-foreground">Monte os pedidos por pousada e envie no grupo do WhatsApp</p>
+          <div className="mr-auto">
+            <h1 className="font-heading text-xl font-bold text-balance text-card-foreground">{pousada.nome}</h1>
+            <p className="text-sm text-muted-foreground">{pousada.subtitulo}</p>
           </div>
+          {onSair && (
+            <Button variant="ghost" onClick={onSair} className="gap-2">
+              <LogOut className="size-4" aria-hidden="true" />
+              Sair
+            </Button>
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-6">
-        {foraDoPrazo && (
-          <div className="mb-6 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
-            <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-            <span>
-              O prazo para pedidos de cestas do dia seguinte é até as {HORA_LIMITE_PEDIDO}h. Pedidos feitos agora podem
-              não ser atendidos amanhã.
-            </span>
-          </div>
-        )}
-
         <section className="mb-6 rounded-2xl border border-border bg-card p-5">
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
@@ -210,48 +225,46 @@ export function ReservasApp() {
                 setSaudacao(e.target.value)
                 setCopiado(false)
               }}
-              placeholder="Ex: Olá cestas de café da manhã 07/08"
+              placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
               className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
             />
           </label>
+
+          {unidadesAtivas.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Prévia da mensagem do WhatsApp</p>
+              <pre className="max-h-56 overflow-auto rounded-lg border border-border bg-background p-3 text-xs whitespace-pre-wrap text-foreground">
+                {mensagem}
+              </pre>
+            </div>
+          )}
         </section>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {pousadas.map((pedido) => (
-            <PousadaCard
-              key={pedido.pousada.id}
-              pedido={pedido}
+          {unidades.map((unidade) => (
+            <UnidadeCard
+              key={unidade.id}
+              unidade={unidade}
+              mostrarErros={mostrarErros || unidadesInvalidas.length > 0}
               onHorario={handleHorario}
-              onAdicionarQuarto={handleAdicionarQuarto}
-              onRemoverQuarto={handleRemoverQuarto}
-              onQuarto={handleQuarto}
               onPessoas={handlePessoas}
               onItem={handleItem}
+              onDieta={handleDieta}
+              onObservacao={handleObservacao}
               onLimpar={handleLimpar}
             />
           ))}
         </div>
       </main>
 
-      {/* Atalhos flutuantes para métricas e estoque */}
-      <div className="fixed bottom-24 right-4 z-10 flex flex-col items-end gap-2 sm:bottom-28">
-        <Link
-          href="/estoque"
-          className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-lg transition-colors hover:bg-secondary"
-          aria-label="Abrir controle de estoque"
-        >
-          <Boxes className="size-4 text-primary" aria-hidden="true" />
-          Estoque
-        </Link>
-        <Link
-          href="/metricas"
-          className="flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-lg transition-colors hover:bg-secondary"
-          aria-label="Abrir dashboard de métricas"
-        >
-          <BarChart3 className="size-4 text-primary" aria-hidden="true" />
-          Métricas
-        </Link>
-      </div>
+      <Link
+        href="/auth"
+        className="fixed bottom-24 right-4 z-10 flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2.5 text-sm font-medium text-card-foreground shadow-lg transition-colors hover:bg-secondary sm:bottom-28"
+        aria-label="Área administrativa"
+      >
+        <BarChart3 className="size-4 text-primary" aria-hidden="true" />
+        Administração
+      </Link>
 
       <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
@@ -261,13 +274,18 @@ export function ReservasApp() {
                 <Copy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>Mensagem copiada! Cole no grupo do WhatsApp.</span>
               </>
+            ) : unidadesInvalidas.length > 0 ? (
+              <>
+                <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                <span>Informe horário e pessoas em: {unidadesInvalidas.map((u) => u.nome).join(", ")}</span>
+              </>
             ) : (
               <>
                 <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
                 <span>
                   {unidadesAtivas.length > 0
-                    ? `${unidadesAtivas.length} ${unidadesAtivas.length === 1 ? "quarto pronto" : "quartos prontos"} para envio`
-                    : "Preencha ao menos um quarto para enviar"}
+                    ? `${unidadesAtivas.length} ${unidadesAtivas.length === 1 ? "unidade pronta" : "unidades prontas"} para envio`
+                    : "Preencha ao menos uma unidade para enviar"}
                 </span>
               </>
             )}
@@ -282,7 +300,7 @@ export function ReservasApp() {
               onClick={handleConcluir}
               disabled={!podeEnviar || enviando}
               className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-              aria-label="Concluir, copiar mensagem, gerar logística e abrir o grupo"
+              aria-label="Concluir, copiar mensagem e abrir o grupo"
             >
               {copiado ? <Check className="size-4" aria-hidden="true" /> : <Send className="size-4" aria-hidden="true" />}
               {enviando ? "Enviando..." : "Concluir"}

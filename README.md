@@ -2,27 +2,61 @@
 
 This is a [Next.js](https://nextjs.org) project bootstrapped with [v0](https://v0.app).
 
-## Estrutura de entrega de cestas
+## Sistema de Pedidos — Pousadas Quitutes
 
-O app implementa, dentro do próprio Next.js, a estrutura descrita no mapa mental "Estrutura de
-entrega de cestas": pedidos organizados por pousada (com horário fixo de entrega), geração da
-mensagem padronizada para o WhatsApp, folha de logística A4 (com impressão automática) para cada
-pedido concluído, feedback via QR Code, dashboard de métricas com fechamento de período, previsão
-de demanda, painel de pendências e controle simples de estoque.
+Este app é a migração completa e funcionalmente equivalente do sistema que rodava na Lovable
+(`Quitutes Reborn`), agora hospedado inteiramente na Vercel e com o backend no Supabase. Nenhuma
+funcionalidade foi deixada para trás:
 
-Toda a automação que antes rodava no N8N (webhook recebendo o fechamento de métricas e gravando no
-Supabase) foi trazida para dentro do app:
+- **Portal por pousada**: login próprio (usuário/senha) para cada uma das 4 pousadas atendidas —
+  Vale do Sol, Alquimia Chalés, Pousada Ser.Tão e Pousada Itaoka Belvedere — cada uma com sua
+  própria URL fixa (`/vale-do-sol`, `/alquimia-chales`, `/ser-tao`, `/itaoka-belvedere`) além do
+  portal genérico em `/`. A sessão da pousada fica salva no navegador (`hooks/use-pousada.ts`).
+- **Montagem do pedido**: horário (obrigatório), quantidade de pessoas (obrigatória), itens extras
+  (café, suco, chá, água quente, ovos), tipo de cesta (vegana / sem glúten / sem lactose) e
+  observação livre por unidade — com validação obrigatória de horário e pessoas tanto na interface
+  quanto no backend (`lib/pedidos-validacao.ts`).
+- **Envio para o WhatsApp**: a mensagem é copiada para a área de transferência dentro do próprio
+  gesto de clique (evitando bloqueios do navegador, com fallback via `execCommand`), com
+  confirmação visual, e o grupo é aberto automaticamente logo em seguida.
+- **Administração** (`/auth` → `/metricas`, protegida por Supabase Auth + papel `admin` em
+  `user_roles`): dashboard de métricas por período (dia/semana/mês/ano) e por pousada, edição e
+  cancelamento de pedidos (cada ação gera e copia a mensagem correspondente para o WhatsApp),
+  exportação de relatórios em PDF e CSV.
+- **Banco de dados**: 100% Supabase (Postgres + RLS) — sem Neon. Pousadas só podem inserir
+  pedidos; apenas administradores podem ler, editar ou excluir.
 
-- `app/actions/metricas.ts` — `exportarMetricas` fecha um período (dia/semana/mês/ano) e grava em
-  `metricas_exportadas`, substituindo o fluxo "Receber PDF → Salvar Métricas no Supabase" do N8N.
-- `app/api/cron/fechar-metricas/route.ts` — endpoint chamado pelo Vercel Cron (`vercel.json`) para
-  fechar as métricas do dia automaticamente, sem depender de nenhum serviço externo. Opcionalmente
-  protegido por uma variável de ambiente `CRON_SECRET`.
-- `app/logistica/[id]` — folha de logística A4 gerada e impressa automaticamente ao concluir um
-  pedido, com QR Code de feedback (`app/feedback/[id]`).
-- `app/estoque` — controle simples de estoque de insumos.
+A automação que antes rodava no N8N (webhook recebendo o fechamento de métricas) foi trazida para
+dentro do próprio app, sem depender mais de nenhum serviço externo:
+
+- O diálogo de exportação (`components/exportar-dialog.tsx` + `app/actions/metricas.ts`) permite
+  fechar qualquer período manualmente, gravando o resumo em `metricas_exportadas`.
+- `app/api/cron/fechar-metricas/route.ts`, agendado pelo Vercel Cron (`vercel.json`), fecha as
+  métricas do dia automaticamente, autenticado por `CRON_SECRET` e usando a service role do
+  Supabase (`lib/supabase/admin.ts`).
 
 O N8N não é mais utilizado por este projeto.
+
+### Variáveis de ambiente
+
+Copie `.env.example` para `.env.local` e configure também no projeto da Vercel:
+
+- `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` — já preenchidas no exemplo (são
+  públicas por design).
+- `SUPABASE_SERVICE_ROLE_KEY` — pegue em Supabase → Project Settings → API. Nunca exponha no
+  cliente.
+- `CRON_SECRET` — qualquer segredo forte; usado para autorizar a chamada do Vercel Cron.
+
+### Contas administrativas
+
+As duas contas administrativas (Bernardo Campos e Quitutes da Beth) precisam existir no Supabase
+Auth deste projeto — crie-as em Authentication → Users (ou peça para a pessoa se cadastrar) e então
+insira o papel de admin:
+
+```sql
+insert into public.user_roles (user_id, role)
+values ('<uuid-do-usuario>', 'admin');
+```
 
 ## Built with v0
 

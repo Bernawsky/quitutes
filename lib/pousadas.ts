@@ -1,28 +1,103 @@
+export type UnidadeBase = { nome: string; isSuite?: boolean }
+
 export type Pousada = {
-  id: string
+  slug: string
   nome: string
-  horarioPadrao: string
-  horarioFixo: boolean
+  usuario: string
+  senha: string
+  subtitulo: string
+  unidades: UnidadeBase[]
 }
 
-// Horários e ordem definidos na estrutura de entrega (mapa mental "Estrutura de entrega de cestas").
-export const POUSADAS: Pousada[] = [
-  { id: "vale-do-sol", nome: "Vale Do Sol", horarioPadrao: "6:30", horarioFixo: true },
-  { id: "villa-manso", nome: "Villa Manso", horarioPadrao: "7:00", horarioFixo: true },
-  { id: "ser-tao", nome: "Ser.Tão", horarioPadrao: "7:30", horarioFixo: true },
-  { id: "alquimia", nome: "Alquimia", horarioPadrao: "8:00", horarioFixo: true },
-  { id: "itaoka-b", nome: "Itaoka B.", horarioPadrao: "8:30", horarioFixo: true },
-  { id: "d-de-noiva", nome: "D. de Noiva", horarioPadrao: "9:00", horarioFixo: false },
-  { id: "cabana", nome: "Cabana", horarioPadrao: "9:00", horarioFixo: false },
-  { id: "p-bom-tempo", nome: "P. Bom Tempo", horarioPadrao: "9:00", horarioFixo: false },
-  { id: "vila-doideira", nome: "Vila Doideira", horarioPadrao: "9:00", horarioFixo: false },
+const VALE_DO_SOL_UNIDADES: UnidadeBase[] = [
+  ...Array.from({ length: 10 }, (_, i) => ({ nome: `Chalé ${i + 1}` })),
+  { nome: "Suíte", isSuite: true },
 ]
 
-export const HORARIOS_DISPONIVEIS = ["6:30", "7:00", "7:30", "8:00", "8:30", "9:00"] as const
+const ALQUIMIA_UNIDADES: UnidadeBase[] = [
+  "Quartzo Rosa",
+  "Amolite",
+  "Rubi",
+  "Topázio",
+  "Turquesa",
+  "Ágata",
+  "Olho de Tigre",
+  "Ametista",
+  "Turmalina",
+  "Safira",
+  "Esmeralda",
+].map((nome) => ({ nome }))
 
-export function pousadaPorId(id: string): Pousada | undefined {
-  return POUSADAS.find((p) => p.id === id)
+const SERTAO_UNIDADES: UnidadeBase[] = [
+  "01",
+  "02",
+  "03",
+  "04",
+  "05",
+  "06",
+  "07",
+  "08",
+  "09",
+  "10",
+  "11",
+  "12",
+].map((n) => ({ nome: `Quarto ${n}` }))
+
+const ITAOKA_UNIDADES: UnidadeBase[] = ["Realize", "Acredite", "Sonhe", "Inspire", "Gratidão"].map((nome) => ({
+  nome: `Chalé ${nome}`,
+}))
+
+export const POUSADAS: Pousada[] = [
+  {
+    slug: "vale-do-sol",
+    nome: "Vale do Sol",
+    usuario: "Vale do Sol",
+    senha: "1054",
+    subtitulo: "Monte os pedidos e envie no grupo do WhatsApp",
+    unidades: VALE_DO_SOL_UNIDADES,
+  },
+  {
+    slug: "alquimia-chales",
+    nome: "Alquimia Chalés",
+    usuario: "Alquimia Chalés",
+    senha: "8235",
+    subtitulo: "Monte os pedidos dos chalés e envie no grupo do WhatsApp",
+    unidades: ALQUIMIA_UNIDADES,
+  },
+  {
+    slug: "ser-tao",
+    nome: "Pousada Ser.Tão",
+    usuario: "Ser.Tão",
+    senha: "1882",
+    subtitulo: "Monte os pedidos dos quartos e envie no grupo do WhatsApp",
+    unidades: SERTAO_UNIDADES,
+  },
+  {
+    slug: "itaoka-belvedere",
+    nome: "Pousada Itaoka Belvedere",
+    usuario: "Itaoka Belvedere",
+    senha: "1313",
+    subtitulo: "Monte os pedidos dos chalés e envie no grupo do WhatsApp",
+    unidades: ITAOKA_UNIDADES,
+  },
+]
+
+export function pousadaPorSlug(slug: string | null | undefined): Pousada | null {
+  return POUSADAS.find((p) => p.slug === slug) ?? null
 }
 
-// Prazo: pedidos devem ser enviados até 16h do dia anterior à entrega.
-export const HORA_LIMITE_PEDIDO = 16
+function normalizar(v: string): string {
+  return v
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+}
+
+/** Valida usuário + senha de uma pousada. Retorna a pousada quando confere. */
+export function autenticarPousada(usuario: string, senha: string): Pousada | null {
+  const u = normalizar(usuario)
+  const p = POUSADAS.find((item) => normalizar(item.usuario) === u)
+  if (!p) return null
+  return p.senha === senha.trim() ? p : null
+}
