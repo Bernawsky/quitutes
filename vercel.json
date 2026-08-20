@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/cron/fechar-metricas",
+      "schedule": "0 9 * * *"
+    }
+  ]
+}

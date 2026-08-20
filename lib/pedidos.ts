@@ -1,6 +1,3 @@
-export const HORARIOS = ["6:30hrs", "8hrs"] as const
-export type Horario = (typeof HORARIOS)[number]
-
 export const ITENS = [
   { key: "cafe", label: "Garrafinha de café" },
   { key: "suco", label: "Garrafinha de suco" },
@@ -23,8 +20,11 @@ export function descreverItens(itens: Itens): string[] {
   return ITENS.filter((it) => (itens?.[it.key] ?? 0) > 0).map((it) => `${itens[it.key]}x ${it.label}`)
 }
 
+// Uma unidade de pedido = um quarto/chalé/suíte de uma pousada, no horário dela.
 export type UnidadePedido = {
-  unidade: string
+  pousadaId: string
+  pousada: string
+  quarto: string
   horario: string
   pessoas: number
   itens: Itens
