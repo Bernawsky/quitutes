@@ -1,19 +1,11 @@
-/** Tela de carregamento do portal de pedidos, com o vídeo da cesta passando por cima do texto. */
+import { Loader2 } from "lucide-react"
+
+/** Tela de carregamento simples: um spinner em loop por cima do texto (sem vídeo). */
 export function TelaCarregando({ texto = "Carregando..." }: { texto?: string }) {
   return (
-    <div className="relative flex min-h-svh items-center justify-center overflow-hidden bg-background">
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        className="absolute inset-0 size-full object-cover"
-        src="/videos/cesta-de-cafe-da-manha.mp4"
-      />
-      <div className="absolute inset-0 bg-background/40" />
-      <p className="relative font-heading text-sm font-semibold text-foreground drop-shadow-[0_1px_4px_rgba(0,0,0,0.35)]">
-        {texto}
-      </p>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-3 bg-background">
+      <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
+      <p className="text-sm text-muted-foreground">{texto}</p>
     </div>
   )
 }
