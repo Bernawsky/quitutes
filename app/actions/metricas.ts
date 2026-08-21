@@ -39,11 +39,12 @@ export async function fecharPeriodo(input: {
 
   if (error) throw new Error(error.message)
 
-  await enviarRelatorioPorEmail(input).catch((e) => {
+  const relatorio = await enviarRelatorioPorEmail(input).catch((e) => {
     console.error("Falha ao enviar relatório de fechamento de período:", e)
+    return { enviado: false as const, motivo: e instanceof Error ? e.message : "Erro desconhecido ao gerar relatório" }
   })
 
-  return { ok: true as const, arquivo }
+  return { ok: true as const, arquivo, relatorio }
 }
 
 async function enviarRelatorioPorEmail(input: {
@@ -56,7 +57,7 @@ async function enviarRelatorioPorEmail(input: {
   for (const e of (process.env.RELATORIO_EMAILS_EXTRA ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
     destinatarios.add(e)
   }
-  if (destinatarios.size === 0) return
+  if (destinatarios.size === 0) return { enviado: false as const, motivo: "Nenhum administrador com e-mail encontrado" }
 
   const ativos = input.pedidos.filter((p) => p.status !== "cancelado")
   const cancelados = input.pedidos.length - ativos.length
@@ -83,7 +84,7 @@ async function enviarRelatorioPorEmail(input: {
   const analiseHtml = await gerarAnaliseIA(dadosAnalise)
   const html = montarEmailRelatorio({ ...dadosAnalise, analiseHtml })
 
-  await enviarEmail({
+  return enviarEmail({
     to: Array.from(destinatarios),
     subject: `Fechamento de período — ${input.rotuloPeriodo} — Quitutes`,
     html,
