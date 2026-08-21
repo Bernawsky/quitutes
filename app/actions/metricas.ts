@@ -83,10 +83,25 @@ async function enviarRelatorioPorEmail(input: {
 
   const analiseHtml = await gerarAnaliseIA(dadosAnalise)
   const html = montarEmailRelatorio({ ...dadosAnalise, analiseHtml })
+  const subject = `Fechamento de período — ${input.rotuloPeriodo} — Quitutes`
 
-  return enviarEmail({
-    to: Array.from(destinatarios),
-    subject: `Fechamento de período — ${input.rotuloPeriodo} — Quitutes`,
-    html,
-  })
+  // Envia um a um: no modo sandbox do Resend (sem domínio verificado), só o e-mail
+  // dono da conta recebe — enviar em lote faria um destinatário inválido derrubar todos.
+  const resultados = await Promise.all(
+    Array.from(destinatarios).map(async (to) => ({ to, ...(await enviarEmail({ to: [to], subject, html })) })),
+  )
+
+  const entregues = resultados.filter((r) => r.enviado)
+  if (entregues.length === 0) {
+    const motivos = resultados.map((r) => `${r.to}: ${r.motivo ?? "erro desconhecido"}`).join(" | ")
+    return { enviado: false as const, motivo: motivos }
+  }
+  const falhas = resultados.filter((r) => !r.enviado)
+  return {
+    enviado: true as const,
+    motivo:
+      falhas.length > 0
+        ? `Entregue para ${entregues.map((r) => r.to).join(", ")}. Falhou para ${falhas.map((r) => r.to).join(", ")}.`
+        : undefined,
+  }
 }

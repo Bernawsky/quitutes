@@ -36,7 +36,11 @@ export function ExportarDialog({ aberto, onClose, pedidos, ranking, periodo, rot
       if (acao !== "arquivos") {
         const { relatorio } = await fecharPeriodo({ periodo, rotuloPeriodo, totalPedidos: pedidos.length, ranking, pedidos })
         if (relatorio?.enviado) {
-          toast.success("Período fechado. Relatório com análise enviado por e-mail.")
+          toast.success(
+            relatorio.motivo
+              ? `Período fechado. Relatório enviado (${relatorio.motivo})`
+              : "Período fechado. Relatório com análise enviado por e-mail.",
+          )
         } else {
           toast.warning(`Período fechado, mas o e-mail não saiu: ${relatorio?.motivo ?? "motivo desconhecido"}`)
         }
