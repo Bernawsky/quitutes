@@ -1,42 +1,60 @@
 "use client"
 
-import { useCallback, useEffect, useState } from "react"
-import { POUSADAS, pousadaPorSlug, type Pousada } from "@/lib/pousadas"
+import { useEffect, useState } from "react"
+import { supabase } from "@/lib/supabase/client"
+import { getPousadaPorAuthUser } from "@/lib/pousadas-api"
+import type { Pousada } from "@/lib/pousadas"
 
-const CHAVE = "quitutes.pousada"
-
-/** Sessão simples da pousada, persistida no navegador (mantém o usuário logado). */
-export function usePousada() {
+/**
+ * Sessão real da pousada: deriva do usuário autenticado no Supabase Auth
+ * (cada pousada tem uma conta própria, ver lib/pousadas-api.ts).
+ */
+export function usePousadaSessao() {
   const [pousada, setPousada] = useState<Pousada | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    try {
-      const slug = window.localStorage.getItem(CHAVE)
-      setPousada(pousadaPorSlug(slug))
-    } catch {
-      setPousada(null)
+    let ativo = true
+
+    async function resolver(userId: string | undefined) {
+      if (!userId) {
+        if (ativo) {
+          setPousada(null)
+          setCarregando(false)
+        }
+        return
+      }
+      try {
+        const p = await getPousadaPorAuthUser(userId)
+        if (ativo) {
+          setPousada(p)
+          setCarregando(false)
+        }
+      } catch {
+        if (ativo) {
+          setPousada(null)
+          setCarregando(false)
+        }
+      }
     }
-    setCarregando(false)
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setCarregando(true)
+      void resolver(session?.user?.id)
+    })
+
+    void supabase.auth.getSession().then(({ data }) => resolver(data.session?.user?.id))
+
+    return () => {
+      ativo = false
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
-  const entrar = useCallback((p: Pousada) => {
-    try {
-      window.localStorage.setItem(CHAVE, p.slug)
-    } catch {
-      /* ignora storage indisponível */
-    }
-    setPousada(p)
-  }, [])
-
-  const sair = useCallback(() => {
-    try {
-      window.localStorage.removeItem(CHAVE)
-    } catch {
-      /* ignora */
-    }
+  const sair = async () => {
+    await supabase.auth.signOut()
     setPousada(null)
-  }, [])
+  }
 
-  return { pousada, carregando, entrar, sair, pousadas: POUSADAS }
+  return { pousada, carregando, sair }
 }

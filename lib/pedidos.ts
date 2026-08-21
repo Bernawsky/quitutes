@@ -60,6 +60,7 @@ export type Pedido = {
   id: number
   created_at: string
   pousada?: string
+  pousada_id?: string | null
   titulo: string
   saudacao: string
   unidades: UnidadePedido[]

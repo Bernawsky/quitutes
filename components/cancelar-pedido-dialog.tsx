@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Ban, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { copiarTexto } from "@/components/reservas-app"
-import { cancelarPedido } from "@/app/actions/pedidos-admin"
+import { cancelarPedidoPousada } from "@/lib/pedidos-api"
 import { LINK_GRUPO, gerarMensagemCancelamento, type Pedido } from "@/lib/pedidos"
 
 export function CancelarPedidoDialog({
@@ -24,8 +24,14 @@ export function CancelarPedidoDialog({
     copiarTexto(gerarMensagemCancelamento(pedido, motivo.trim()))
     startTransition(async () => {
       try {
-        await cancelarPedido({ id: pedido.id, motivo: motivo.trim() })
+        await cancelarPedidoPousada({ id: pedido.id, motivo: motivo.trim() })
         onCancelado()
+        // Avisa os admins por e-mail (best-effort: não bloqueia o fluxo se falhar).
+        void fetch("/api/notificar/cancelamento", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pedidoId: pedido.id, pousada: pedido.pousada, motivo: motivo.trim() }),
+        }).catch(() => {})
         toast.success("Pedido cancelado", { description: "Mensagem copiada. Abrindo o grupo do WhatsApp." })
         onClose()
         window.setTimeout(() => {

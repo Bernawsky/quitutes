@@ -6,9 +6,9 @@ import { Save, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { copiarTexto } from "@/components/reservas-app"
-import { editarPedido } from "@/app/actions/pedidos-admin"
-import { HORARIOS, LINK_GRUPO, gerarMensagemEdicao, normalizarHorario, type Pedido, type UnidadePedido } from "@/lib/pedidos"
-import { pousadaPorNome } from "@/lib/pousadas"
+import { editarPedidoPousada } from "@/lib/pedidos-api"
+import { LINK_GRUPO, gerarMensagemEdicao, normalizarHorario, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import type { Pousada } from "@/lib/pousadas"
 
 function paraUnidades(pedido: Pedido): Unidade[] {
   return (pedido.unidades ?? []).map((u, i) => ({
@@ -25,10 +25,12 @@ function paraUnidades(pedido: Pedido): Unidade[] {
 
 export function EditarPedidoDialog({
   pedido,
+  pousada,
   onClose,
   onSalvo,
 }: {
   pedido: Pedido
+  pousada: Pousada
   onClose: () => void
   onSalvo: () => void
 }) {
@@ -37,9 +39,7 @@ export function EditarPedidoDialog({
   const [mostrarErros, setMostrarErros] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  // Restringe os horários aos da pousada do pedido; se a pousada não for encontrada
-  // (renomeada/removida), permite qualquer horário válido como fallback.
-  const horarios = pousadaPorNome(pedido.pousada)?.horarios ?? HORARIOS
+  const horarios = pousada.horarios
 
   const invalidas = unidades.filter((u) => !u.horario || !(u.pessoas > 0))
 
@@ -73,7 +73,7 @@ export function EditarPedidoDialog({
 
     startTransition(async () => {
       try {
-        await editarPedido({ id: pedido.id, saudacao: saudacao.trim(), unidades: payload })
+        await editarPedidoPousada({ id: pedido.id, saudacao: saudacao.trim(), unidades: payload })
         onSalvo()
         toast.success("Pedido atualizado", { description: "Mensagem copiada. Abrindo o grupo do WhatsApp." })
         onClose()

@@ -10,6 +10,7 @@ export type Database = {
           titulo: string
           saudacao: string
           pousada: string
+          pousada_id: string | null
           unidades: Json
           total_unidades: number
           total_itens: number
@@ -26,6 +27,7 @@ export type Database = {
           titulo?: string
           saudacao: string
           pousada: string
+          pousada_id?: string | null
           unidades: Json
           total_unidades: number
           total_itens: number
@@ -37,6 +39,62 @@ export type Database = {
           atualizado_por?: string | null
         }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
+        Relationships: []
+      }
+      pedidos_log: {
+        Row: {
+          id: number
+          pedido_id: number
+          pousada_id: string | null
+          acao: string
+          motivo: string | null
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          criado_por: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          pedido_id: number
+          pousada_id?: string | null
+          acao: string
+          motivo?: string | null
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          criado_por?: string | null
+          created_at?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["pedidos_log"]["Insert"]>
+        Relationships: []
+      }
+      pousadas: {
+        Row: {
+          id: string
+          slug: string
+          nome: string
+          usuario: string
+          subtitulo: string
+          horarios: Json
+          unidades: Json
+          auth_user_id: string | null
+          ativa: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          nome: string
+          usuario: string
+          subtitulo?: string
+          horarios?: Json
+          unidades?: Json
+          auth_user_id?: string | null
+          ativa?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["pousadas"]["Insert"]>
         Relationships: []
       }
       user_roles: {
@@ -73,7 +131,24 @@ export type Database = {
       }
     }
     Views: Record<string, never>
-    Functions: Record<string, never>
+    Functions: {
+      criar_pousada: {
+        Args: {
+          _slug: string
+          _nome: string
+          _usuario: string
+          _senha: string
+          _subtitulo: string
+          _horarios: Json
+          _unidades: Json
+        }
+        Returns: string
+      }
+      redefinir_senha_pousada: {
+        Args: { _pousada_id: string; _nova_senha: string }
+        Returns: undefined
+      }
+    }
     Enums: Record<string, never>
     CompositeTypes: Record<string, never>
   }

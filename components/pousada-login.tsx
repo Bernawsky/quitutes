@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { LogIn, Lock, ShieldCheck, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
@@ -16,10 +16,10 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { supabase } from "@/lib/supabase/client"
-import { autenticarPousada, POUSADAS, type Pousada } from "@/lib/pousadas"
+import { getPousadas } from "@/lib/pousadas-api"
+import { pousadaEmailSintetico, type Pousada } from "@/lib/pousadas"
 
 type Props = {
-  onEntrar: (pousada: Pousada) => void
   /** Quando definido, só aceita o login desta pousada. */
   pousadaFixa?: Pousada
 }
@@ -40,25 +40,33 @@ const ADMINS = [
   },
 ] as const
 
-export function PousadaLogin({ onEntrar, pousadaFixa }: Props) {
+export function PousadaLogin({ pousadaFixa }: Props) {
   const router = useRouter()
+  const [pousadas, setPousadas] = useState<Pousada[]>(pousadaFixa ? [pousadaFixa] : [])
   const [selecionado, setSelecionado] = useState(pousadaFixa?.slug ?? "")
   const [senha, setSenha] = useState("")
   const [enviando, setEnviando] = useState(false)
 
-  const admin = ADMINS.find((a) => a.valor === selecionado)
+  useEffect(() => {
+    if (pousadaFixa) return
+    void getPousadas()
+      .then(setPousadas)
+      .catch(() => toast.error("Não foi possível carregar as pousadas"))
+  }, [pousadaFixa])
 
   const rotulos: Record<string, string> = {
-    ...Object.fromEntries(POUSADAS.map((p) => [p.slug, p.nome])),
+    ...Object.fromEntries(pousadas.map((p) => [p.slug, p.nome])),
     ...Object.fromEntries(ADMINS.map((a) => [a.valor, a.nome])),
   }
+
+  const admin = ADMINS.find((a) => a.valor === selecionado)
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault()
     if (enviando) return
+    setEnviando(true)
 
     if (admin) {
-      setEnviando(true)
       const { error } = await supabase.auth.signInWithPassword({ email: admin.email, password: senha })
       setEnviando(false)
       if (error) {
@@ -70,15 +78,24 @@ export function PousadaLogin({ onEntrar, pousadaFixa }: Props) {
       return
     }
 
-    const alvo = POUSADAS.find((p) => p.slug === selecionado)
-    const p = alvo ? autenticarPousada(alvo.usuario, senha) : null
-    if (p && (!pousadaFixa || p.slug === pousadaFixa.slug)) {
-      toast.success(`Bem-vindo, ${p.nome}!`)
-      onEntrar(p)
+    const alvo = pousadas.find((p) => p.slug === selecionado) ?? pousadaFixa
+    if (!alvo) {
+      setEnviando(false)
+      toast.error("Escolha uma pousada")
       return
     }
 
-    toast.error("Usuário ou senha inválidos")
+    const { error } = await supabase.auth.signInWithPassword({
+      email: pousadaEmailSintetico(alvo.slug),
+      password: senha,
+    })
+    setEnviando(false)
+    if (error) {
+      toast.error("Usuário ou senha inválidos")
+      return
+    }
+    toast.success(`Bem-vindo, ${alvo.nome}!`)
+    // A sessão é detectada automaticamente pelo portal (hooks/use-pousada.ts).
   }
 
   return (
@@ -104,7 +121,7 @@ export function PousadaLogin({ onEntrar, pousadaFixa }: Props) {
               <SelectContent className="rounded-xl border-border">
                 <SelectGroup>
                   <SelectLabel className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Pousadas</SelectLabel>
-                  {POUSADAS.map((p) => (
+                  {pousadas.map((p) => (
                     <SelectItem key={p.slug} value={p.slug} className="rounded-lg py-2.5">
                       <Building2 className="size-4 text-muted-foreground" aria-hidden="true" />
                       <span className="font-medium">{p.usuario}</span>

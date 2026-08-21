@@ -1,9 +1,10 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks } from "lucide-react"
 import { toast } from "sonner"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
+import { MeusPedidos } from "@/components/meus-pedidos"
 import { Button } from "@/components/ui/button"
 import { LINK_GRUPO, dataSaudacao, gerarMensagem, type UnidadePedido } from "@/lib/pedidos"
 import { salvarPedido } from "@/lib/pedidos-api"
@@ -68,6 +69,7 @@ export function copiarFallback(texto: string): boolean {
 }
 
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
+  const [aba, setAba] = useState<"novo" | "meus">("novo")
   const [saudacao, setSaudacao] = useState(dataSaudacao())
   const [unidades, setUnidades] = useState<Unidade[]>(() => criarUnidades(pousada))
   const [enviando, setEnviando] = useState(false)
@@ -191,7 +193,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
     }
 
     // 2) Salva o pedido para o dashboard de métricas
-    void salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload, pousada: pousada.nome })
+    void salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload, pousadaId: pousada.id, pousada: pousada.nome })
       .catch(() => {
         toast.error("Não foi possível registrar o pedido nas métricas")
       })
@@ -224,53 +226,82 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
             </Button>
           )}
         </div>
+        <div className="mx-auto flex max-w-5xl gap-2 px-4 pb-4">
+          <button
+            type="button"
+            onClick={() => setAba("novo")}
+            className={
+              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors " +
+              (aba === "novo" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+            }
+          >
+            Novo pedido
+          </button>
+          <button
+            type="button"
+            onClick={() => setAba("meus")}
+            className={
+              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors " +
+              (aba === "meus" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+            }
+          >
+            <ListChecks className="size-3.5" aria-hidden="true" />
+            Meus pedidos
+          </button>
+        </div>
       </header>
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        <section className="mb-6 rounded-2xl border border-border bg-card p-5">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
-            <input
-              type="text"
-              value={saudacao}
-              onChange={(e) => {
-                setSaudacao(e.target.value)
-                setCopiado(false)
-              }}
-              placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
-              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
-            />
-          </label>
+      {aba === "meus" ? (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <MeusPedidos pousada={pousada} />
+        </main>
+      ) : (
+        <>
+          <main className="mx-auto max-w-5xl px-4 py-6">
+            <section className="mb-6 rounded-2xl border border-border bg-card p-5">
+              <label className="flex flex-col gap-1.5">
+                <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
+                <input
+                  type="text"
+                  value={saudacao}
+                  onChange={(e) => {
+                    setSaudacao(e.target.value)
+                    setCopiado(false)
+                  }}
+                  placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
+                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+                />
+              </label>
 
-          {unidadesAtivas.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-1.5 text-xs font-medium text-muted-foreground">Prévia da mensagem do WhatsApp</p>
-              <pre className="max-h-56 overflow-auto rounded-lg border border-border bg-background p-3 text-xs whitespace-pre-wrap text-foreground">
-                {mensagem}
-              </pre>
+              {unidadesAtivas.length > 0 && (
+                <div className="mt-4">
+                  <p className="mb-1.5 text-xs font-medium text-muted-foreground">Prévia da mensagem do WhatsApp</p>
+                  <pre className="max-h-56 overflow-auto rounded-lg border border-border bg-background p-3 text-xs whitespace-pre-wrap text-foreground">
+                    {mensagem}
+                  </pre>
+                </div>
+              )}
+            </section>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {unidades.map((unidade) => (
+                <UnidadeCard
+                  key={unidade.id}
+                  unidade={unidade}
+                  horarios={pousada.horarios}
+                  mostrarErros={mostrarErros || unidadesInvalidas.length > 0}
+                  onHorario={handleHorario}
+                  onPessoas={handlePessoas}
+                  onItem={handleItem}
+                  onDieta={handleDieta}
+                  onObservacao={handleObservacao}
+                  onLimpar={handleLimpar}
+                />
+              ))}
             </div>
-          )}
-        </section>
+          </main>
 
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {unidades.map((unidade) => (
-            <UnidadeCard
-              key={unidade.id}
-              unidade={unidade}
-              horarios={pousada.horarios}
-              mostrarErros={mostrarErros || unidadesInvalidas.length > 0}
-              onHorario={handleHorario}
-              onPessoas={handlePessoas}
-              onItem={handleItem}
-              onDieta={handleDieta}
-              onObservacao={handleObservacao}
-              onLimpar={handleLimpar}
-            />
-          ))}
-        </div>
-      </main>
-
-      <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
+          <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
         <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-2 text-sm text-muted-foreground">
             {copiado ? (
@@ -311,7 +342,9 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
             </Button>
           </div>
         </div>
-      </footer>
+          </footer>
+        </>
+      )}
     </div>
   )
 }
