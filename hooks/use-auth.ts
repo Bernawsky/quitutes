@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 import type { Session, User } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase/client"
+import { supabase, sessaoAtualRenovada } from "@/lib/supabase/client"
 
 export function useAuth() {
   const [session, setSession] = useState<Session | null>(null)
@@ -16,9 +16,9 @@ export function useAuth() {
       setUser(s?.user ?? null)
     })
 
-    void supabase.auth.getSession().then(({ data }) => {
-      setSession(data.session)
-      setUser(data.session?.user ?? null)
+    void sessaoAtualRenovada().then((sessao) => {
+      setSession(sessao)
+      setUser(sessao?.user ?? null)
       setCarregando(false)
     })
 

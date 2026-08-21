@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   History,
   Settings,
+  X,
 } from "lucide-react"
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } from "@/components/ui/chart"
@@ -163,6 +164,7 @@ export function MetricasDashboard() {
   const [dataExata, setDataExata] = useState("")
   const [exportando, setExportando] = useState(false)
   const [aba, setAba] = useState<"visao-geral" | "historico">("visao-geral")
+  const [pendenciasFechadas, setPendenciasFechadas] = useState(false)
 
   // Atualiza sozinho quando qualquer pedido muda (a pousada edita/cancela em tempo real).
   useEffect(() => {
@@ -274,6 +276,11 @@ export function MetricasDashboard() {
     return pousadas.filter((p) => !pousadasComPedidoHoje.has(p.id))
   }, [pedidos, pousadas])
 
+  const chavePendencias = pendencias.map((p) => p.id).join(",")
+  useEffect(() => {
+    setPendenciasFechadas(false)
+  }, [chavePendencias])
+
   const mapaPousadas = useMemo(() => new Map(pousadas.map((p) => [p.id, p.nome])), [pousadas])
 
   const sair = async () => {
@@ -361,13 +368,21 @@ export function MetricasDashboard() {
           </section>
         ) : (
           <>
-            {pendencias.length > 0 && (
+            {pendencias.length > 0 && !pendenciasFechadas && (
               <div className="mb-6 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-4 text-sm text-destructive">
                 <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-                <div>
+                <div className="flex-1">
                   <p className="font-medium">Pousadas sem pedido hoje ({pendencias.length})</p>
                   <p className="mt-0.5 text-destructive/80">{pendencias.map((p) => p.nome).join(", ")}</p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => setPendenciasFechadas(true)}
+                  aria-label="Fechar aviso de pendências"
+                  className="flex size-6 shrink-0 items-center justify-center rounded-md text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+                >
+                  <X className="size-4" aria-hidden="true" />
+                </button>
               </div>
             )}
 

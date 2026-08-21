@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase } from "@/lib/supabase/client"
+import { supabase, sessaoAtualRenovada } from "@/lib/supabase/client"
 import { getPousadaPorAuthUser } from "@/lib/pousadas-api"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -43,7 +43,7 @@ export function usePousadaSessao() {
       void resolver(session?.user?.id)
     })
 
-    void supabase.auth.getSession().then(({ data }) => resolver(data.session?.user?.id))
+    void sessaoAtualRenovada().then((sessao) => resolver(sessao?.user?.id))
 
     return () => {
       ativo = false
