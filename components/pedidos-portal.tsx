@@ -4,6 +4,7 @@ import { useEffect, useState } from "react"
 import { usePousadaSessao } from "@/hooks/use-pousada"
 import { PousadaLogin } from "@/components/pousada-login"
 import { ReservasApp } from "@/components/reservas-app"
+import { TelaCarregando } from "@/components/tela-carregando"
 import { getPousadaPorSlug } from "@/lib/pousadas-api"
 import { supabase } from "@/lib/supabase/client"
 import type { Pousada } from "@/lib/pousadas"
@@ -25,21 +26,13 @@ export function PedidosPortal({ slug }: { slug?: string }) {
   }, [slug])
 
   if (carregando || pousadaFixa === undefined) {
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Carregando...</p>
-      </div>
-    )
+    return <TelaCarregando />
   }
 
   // URL fixa de uma pousada: se a sessão atual é de outra pousada, desloga.
   if (pousada && pousadaFixa && pousada.slug !== pousadaFixa.slug) {
     void supabase.auth.signOut()
-    return (
-      <div className="flex min-h-svh items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Redirecionando...</p>
-      </div>
-    )
+    return <TelaCarregando texto="Redirecionando..." />
   }
 
   const ativa = pousadaFixa ? (pousada?.slug === pousadaFixa.slug ? pousada : null) : pousada
