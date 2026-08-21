@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase/admin"
-import { enviarEmail, emailsDosAdmins } from "@/lib/email"
+import { enviarWhatsapp, numerosDosAdmins } from "@/lib/whatsapp"
 
-/** Resumo semanal por e-mail (roda toda segunda-feira). */
+/** Resumo semanal por WhatsApp (roda toda segunda-feira). */
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   if (secret) {
@@ -28,19 +28,13 @@ export async function GET(request: Request) {
   for (const p of ativos) porPousada.set(p.pousada, (porPousada.get(p.pousada) ?? 0) + 1)
   const ranking = Array.from(porPousada.entries())
     .sort((a, b) => b[1] - a[1])
-    .map(([nome, total]) => `<li>${nome}: ${total} pedido(s)</li>`)
-    .join("")
+    .map(([nome, total]) => `- ${nome}: ${total} pedido(s)`)
+    .join("\n")
 
-  const admins = await emailsDosAdmins()
-  const resultado = await enviarEmail({
-    to: admins,
-    subject: `Relatório semanal Quitutes — ${totalPedidos} pedidos`,
-    html: `
-      <p><strong>Últimos 7 dias:</strong> ${totalPedidos} pedidos ativos, ${totalPessoas} pessoas atendidas.</p>
-      <p><strong>Por pousada:</strong></p>
-      <ul>${ranking}</ul>
-    `,
+  const resultado = await enviarWhatsapp({
+    destinatarios: numerosDosAdmins(),
+    mensagem: `*Relatório semanal Quitutes — ${totalPedidos} pedidos*\n\nÚltimos 7 dias: *${totalPedidos}* pedidos ativos, *${totalPessoas}* pessoas atendidas.\n\n*Por pousada*\n${ranking}`,
   })
 
-  return NextResponse.json({ ok: true, totalPedidos, totalPessoas, email: resultado })
+  return NextResponse.json({ ok: true, totalPedidos, totalPessoas, whatsapp: resultado })
 }

@@ -1,15 +1,15 @@
 "use server"
 
 import { createServerSupabaseClient } from "@/lib/supabase/server"
-import { emailsDosAdmins, enviarEmail } from "@/lib/email"
+import { enviarWhatsapp, numerosDosAdmins } from "@/lib/whatsapp"
 import { gerarAnaliseIA } from "@/lib/analise-ia"
-import { montarEmailRelatorio } from "@/lib/relatorio-email"
+import { montarMensagemRelatorio } from "@/lib/relatorio-whatsapp"
 import type { Ranking } from "@/lib/export-pedidos"
 import type { Pedido } from "@/lib/pedidos"
 
 /**
  * Fecha um período, grava o resumo em metricas_exportadas e dispara um
- * relatório por e-mail (analisado por IA) para os administradores.
+ * relatório por WhatsApp (analisado por IA) para os administradores.
  * Substitui o antigo envio ao webhook do N8N — roda inteiramente no Vercel/Supabase.
  */
 export async function fecharPeriodo(input: {
@@ -39,7 +39,7 @@ export async function fecharPeriodo(input: {
 
   if (error) throw new Error(error.message)
 
-  const relatorio = await enviarRelatorioPorEmail(input).catch((e) => {
+  const relatorio = await enviarRelatorioPorWhatsapp(input).catch((e) => {
     console.error("Falha ao enviar relatório de fechamento de período:", e)
     return { enviado: false as const, motivo: e instanceof Error ? e.message : "Erro desconhecido ao gerar relatório" }
   })
@@ -47,17 +47,14 @@ export async function fecharPeriodo(input: {
   return { ok: true as const, arquivo, relatorio }
 }
 
-async function enviarRelatorioPorEmail(input: {
+async function enviarRelatorioPorWhatsapp(input: {
   rotuloPeriodo: string
   totalPedidos: number
   ranking: Ranking[]
   pedidos: Pedido[]
 }) {
-  const destinatarios = new Set(await emailsDosAdmins())
-  for (const e of (process.env.RELATORIO_EMAILS_EXTRA ?? "").split(",").map((s) => s.trim()).filter(Boolean)) {
-    destinatarios.add(e)
-  }
-  if (destinatarios.size === 0) return { enviado: false as const, motivo: "Nenhum administrador com e-mail encontrado" }
+  const destinatarios = numerosDosAdmins()
+  if (destinatarios.length === 0) return { enviado: false as const, motivo: "Nenhum número em WHATSAPP_DESTINATARIOS" }
 
   const ativos = input.pedidos.filter((p) => p.status !== "cancelado")
   const cancelados = input.pedidos.length - ativos.length
@@ -81,27 +78,8 @@ async function enviarRelatorioPorEmail(input: {
     porPousada,
   }
 
-  const analiseHtml = await gerarAnaliseIA(dadosAnalise)
-  const html = montarEmailRelatorio({ ...dadosAnalise, analiseHtml })
-  const subject = `Fechamento de período — ${input.rotuloPeriodo} — Quitutes`
+  const analiseTexto = await gerarAnaliseIA(dadosAnalise)
+  const mensagem = montarMensagemRelatorio({ ...dadosAnalise, analiseTexto })
 
-  // Envia um a um: no modo sandbox do Resend (sem domínio verificado), só o e-mail
-  // dono da conta recebe — enviar em lote faria um destinatário inválido derrubar todos.
-  const resultados = await Promise.all(
-    Array.from(destinatarios).map(async (to) => ({ to, ...(await enviarEmail({ to: [to], subject, html })) })),
-  )
-
-  const entregues = resultados.filter((r) => r.enviado)
-  if (entregues.length === 0) {
-    const motivos = resultados.map((r) => `${r.to}: ${r.motivo ?? "erro desconhecido"}`).join(" | ")
-    return { enviado: false as const, motivo: motivos }
-  }
-  const falhas = resultados.filter((r) => !r.enviado)
-  return {
-    enviado: true as const,
-    motivo:
-      falhas.length > 0
-        ? `Entregue para ${entregues.map((r) => r.to).join(", ")}. Falhou para ${falhas.map((r) => r.to).join(", ")}.`
-        : undefined,
-  }
+  return enviarWhatsapp({ destinatarios, mensagem })
 }

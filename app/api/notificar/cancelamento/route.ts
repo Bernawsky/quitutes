@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server"
-import { enviarEmail, emailsDosAdmins } from "@/lib/email"
+import { enviarWhatsapp, numerosDosAdmins } from "@/lib/whatsapp"
 
 /** Chamado pelo app logo após um cancelamento bem-sucedido, para avisar os admins. */
 export async function POST(request: Request) {
@@ -12,11 +12,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "pedidoId inválido" }, { status: 400 })
   }
 
-  const admins = await emailsDosAdmins()
-  const resultado = await enviarEmail({
-    to: admins,
-    subject: `Pedido #${pedidoId} cancelado — ${pousada}`,
-    html: `<p><strong>${pousada}</strong> cancelou o pedido #${pedidoId}.</p>${motivo ? `<p>Motivo: ${motivo}</p>` : ""}`,
+  const resultado = await enviarWhatsapp({
+    destinatarios: numerosDosAdmins(),
+    mensagem: `*${pousada}* cancelou o pedido #${pedidoId}.${motivo ? `\nMotivo: ${motivo}` : ""}`,
   })
 
   return NextResponse.json(resultado)

@@ -26,7 +26,7 @@ export function CancelarPedidoDialog({
       try {
         await cancelarPedidoPousada({ id: pedido.id, motivo: motivo.trim() })
         onCancelado()
-        // Avisa os admins por e-mail (best-effort: não bloqueia o fluxo se falhar).
+        // Avisa os admins por WhatsApp (best-effort: não bloqueia o fluxo se falhar).
         void fetch("/api/notificar/cancelamento", {
           method: "POST",
           headers: { "Content-Type": "application/json" },

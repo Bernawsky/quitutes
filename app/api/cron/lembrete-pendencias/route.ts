@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createAdminSupabaseClient } from "@/lib/supabase/admin"
-import { enviarEmail, emailsDosAdmins } from "@/lib/email"
+import { enviarWhatsapp, numerosDosAdmins } from "@/lib/whatsapp"
 
 /** Lembrete perto do prazo (16h): quais pousadas ainda não enviaram pedido hoje. */
 export async function GET(request: Request) {
@@ -31,12 +31,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: true, pendentes: 0 })
   }
 
-  const admins = await emailsDosAdmins()
-  const resultado = await enviarEmail({
-    to: admins,
-    subject: `${pendentes.length} pousada(s) sem pedido hoje`,
-    html: `<p>As seguintes pousadas ainda não enviaram pedido hoje:</p><ul>${pendentes.map((p) => `<li>${p.nome}</li>`).join("")}</ul>`,
+  const resultado = await enviarWhatsapp({
+    destinatarios: numerosDosAdmins(),
+    mensagem: `*${pendentes.length} pousada(s) sem pedido hoje*\n\n${pendentes.map((p) => `- ${p.nome}`).join("\n")}`,
   })
 
-  return NextResponse.json({ ok: true, pendentes: pendentes.map((p) => p.nome), email: resultado })
+  return NextResponse.json({ ok: true, pendentes: pendentes.map((p) => p.nome), whatsapp: resultado })
 }

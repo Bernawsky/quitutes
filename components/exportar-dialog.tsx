@@ -39,10 +39,10 @@ export function ExportarDialog({ aberto, onClose, pedidos, ranking, periodo, rot
           toast.success(
             relatorio.motivo
               ? `Período fechado. Relatório enviado (${relatorio.motivo})`
-              : "Período fechado. Relatório com análise enviado por e-mail.",
+              : "Período fechado. Relatório com análise enviado por WhatsApp.",
           )
         } else {
-          toast.warning(`Período fechado, mas o e-mail não saiu: ${relatorio?.motivo ?? "motivo desconhecido"}`)
+          toast.warning(`Período fechado, mas o WhatsApp não saiu: ${relatorio?.motivo ?? "motivo desconhecido"}`)
         }
       }
       onClose()

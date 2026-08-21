@@ -11,7 +11,7 @@ type DadosPeriodo = {
 
 /**
  * Gera uma análise executiva do período fechado via API da Anthropic. Requer
- * ANTHROPIC_API_KEY configurada; sem ela, retorna null e o e-mail sai sem a
+ * ANTHROPIC_API_KEY configurada; sem ela, retorna null e a mensagem sai sem a
  * seção de análise, em vez de quebrar o fechamento do período.
  */
 export async function gerarAnaliseIA(dados: DadosPeriodo): Promise<string | null> {
@@ -34,7 +34,7 @@ Estrutura da resposta:
 2. Os destaques e possíveis riscos que os números sugerem (ex: concentração em poucas pousadas, taxa de cancelamento, unidades mais/menos pedidas).
 3. De 2 a 3 recomendações práticas e acionáveis.
 
-Retorne APENAS HTML simples pronto para colar dentro de um e-mail: use <p> para parágrafos e <ul><li> para listas. Não use markdown, não inclua <html>, <head> ou <body>, não invente números fora dos dados fornecidos.`
+Retorne APENAS texto simples pronto para uma mensagem de WhatsApp: use *asteriscos* para negrito e "- " para itens de lista, sem markdown (sem #, sem **), sem títulos HTML, não invente números fora dos dados fornecidos.`
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {

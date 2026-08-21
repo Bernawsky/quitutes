@@ -1,0 +1,14 @@
+{
+  "name": "quitutes-whatsapp-service",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Serviço standalone (fora da Vercel) que envia mensagens de WhatsApp via open-wa para os relatórios do Quitutes.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@open-wa/wa-automate": "^4.63.0",
+    "express": "^4.21.0"
+  }
+}
