@@ -34,8 +34,8 @@ export function ExportarDialog({ aberto, onClose, pedidos, ranking, periodo, rot
       }
 
       if (acao !== "arquivos") {
-        await fecharPeriodo({ periodo, rotuloPeriodo, totalPedidos: pedidos.length, ranking })
-        toast.success("Período fechado e registrado nas métricas")
+        await fecharPeriodo({ periodo, rotuloPeriodo, totalPedidos: pedidos.length, ranking, pedidos })
+        toast.success("Período fechado. Relatório com análise enviado por e-mail.")
       }
       onClose()
     } catch (e) {
