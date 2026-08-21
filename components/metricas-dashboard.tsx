@@ -285,7 +285,7 @@ export function MetricasDashboard() {
 
   const sair = async () => {
     await supabase.auth.signOut()
-    router.replace("/auth")
+    router.replace("/")
   }
 
   return (

@@ -17,7 +17,7 @@ export default async function AdministracaoPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect("/auth")
+  if (!user) redirect("/")
 
   const administradores = await listarAdministradores().catch(() => [])
 

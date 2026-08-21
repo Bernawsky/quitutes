@@ -20,7 +20,7 @@ export default async function MetricasPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) redirect("/auth")
+  if (!user) redirect("/")
 
   return <MetricasDashboard />
 }
