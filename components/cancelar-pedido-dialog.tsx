@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Ban, X } from "lucide-react"
+import { Ban } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { copiarTexto } from "@/components/reservas-app"
 import { cancelarPedidoPousada } from "@/lib/pedidos-api"
 import { LINK_GRUPO, gerarMensagemCancelamento, type Pedido } from "@/lib/pedidos"
@@ -45,19 +46,11 @@ export function CancelarPedidoDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/50 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-md rounded-2xl border border-border bg-background p-5 shadow-xl">
-        <div className="mb-3 flex items-start justify-between gap-3">
-          <h2 className="font-heading text-lg font-bold text-foreground">Cancelar pedido #{pedido.id}</h2>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar"
-            className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-secondary"
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Cancelar pedido #{pedido.id}</DialogTitle>
+        </DialogHeader>
         <p className="text-sm text-muted-foreground">
           {(pedido.unidades?.length ?? 0) === 1
             ? "Esta é a única cesta do pedido. Ao confirmar, uma mensagem curta de cancelamento será copiada e o grupo do WhatsApp será aberto."
@@ -76,16 +69,16 @@ export function CancelarPedidoDialog({
           />
         </label>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={pending} className="tap min-h-11">
             Voltar
           </Button>
-          <Button variant="destructive" onClick={confirmar} disabled={pending} className="gap-2">
+          <Button variant="destructive" onClick={confirmar} disabled={pending} className="tap min-h-11 gap-2">
             <Ban className="size-4" aria-hidden="true" />
             {pending ? "Cancelando..." : "Confirmar cancelamento"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

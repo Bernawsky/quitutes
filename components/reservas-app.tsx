@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react"
 import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { MeusPedidos } from "@/components/meus-pedidos"
 import { Button } from "@/components/ui/button"
@@ -220,34 +221,41 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
             <p className="text-sm text-muted-foreground">{pousada.subtitulo}</p>
           </div>
           {onSair && (
-            <Button variant="ghost" onClick={onSair} className="gap-2">
+            <Button variant="ghost" onClick={onSair} className="tap gap-2">
               <LogOut className="size-4" aria-hidden="true" />
               Sair
             </Button>
           )}
         </div>
-        <div className="mx-auto flex max-w-5xl gap-2 px-4 pb-4">
-          <button
-            type="button"
-            onClick={() => setAba("novo")}
-            className={
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors " +
-              (aba === "novo" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            Novo pedido
-          </button>
-          <button
-            type="button"
-            onClick={() => setAba("meus")}
-            className={
-              "flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors " +
-              (aba === "meus" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
-            }
-          >
-            <ListChecks className="size-3.5" aria-hidden="true" />
-            Meus pedidos
-          </button>
+        <div className="mx-auto max-w-5xl px-4 pb-4">
+          <div className="relative grid grid-cols-2 rounded-xl bg-muted p-1">
+            <span
+              className="absolute inset-y-1 w-[calc(50%-4px)] rounded-lg bg-primary shadow-sm transition-transform duration-300 ease-out"
+              style={{ transform: aba === "meus" ? "translateX(calc(100% + 8px))" : "translateX(0)" }}
+              aria-hidden="true"
+            />
+            <button
+              type="button"
+              onClick={() => setAba("novo")}
+              className={cn(
+                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
+                aba === "novo" ? "text-primary-foreground" : "text-muted-foreground",
+              )}
+            >
+              Novo pedido
+            </button>
+            <button
+              type="button"
+              onClick={() => setAba("meus")}
+              className={cn(
+                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
+                aba === "meus" ? "text-primary-foreground" : "text-muted-foreground",
+              )}
+            >
+              <ListChecks className="size-3.5" aria-hidden="true" />
+              Meus pedidos
+            </button>
+          </div>
         </div>
       </header>
 
@@ -301,47 +309,47 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
             </div>
           </main>
 
-          <footer className="fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
-        <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-start gap-2 text-sm text-muted-foreground">
-            {copiado ? (
-              <>
-                <Copy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>Mensagem copiada! Cole no grupo do WhatsApp.</span>
-              </>
-            ) : unidadesInvalidas.length > 0 ? (
-              <>
-                <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
-                <span>Informe horário e pessoas em: {unidadesInvalidas.map((u) => u.nome).join(", ")}</span>
-              </>
-            ) : (
-              <>
-                <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                <span>
-                  {unidadesAtivas.length > 0
-                    ? `${unidadesAtivas.length} ${unidadesAtivas.length === 1 ? "unidade pronta" : "unidades prontas"} para envio`
-                    : "Preencha ao menos uma unidade para enviar"}
-                </span>
-              </>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            {unidadesAtivas.length > 0 && (
-              <Button variant="ghost" onClick={handleLimparTudo} disabled={enviando}>
-                Limpar tudo
-              </Button>
-            )}
-            <Button
-              onClick={handleConcluir}
-              disabled={!podeEnviar || enviando}
-              className="gap-2 bg-accent text-accent-foreground hover:bg-accent/90"
-              aria-label="Concluir, copiar mensagem e abrir o grupo"
-            >
-              {copiado ? <Check className="size-4" aria-hidden="true" /> : <Send className="size-4" aria-hidden="true" />}
-              {enviando ? "Enviando..." : "Concluir"}
-            </Button>
-          </div>
-        </div>
+          <footer className="safe-bottom fixed inset-x-0 bottom-0 border-t border-border bg-card/95 backdrop-blur">
+            <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-2 text-sm text-muted-foreground">
+                {copiado ? (
+                  <>
+                    <Copy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span>Mensagem copiada! Cole no grupo do WhatsApp.</span>
+                  </>
+                ) : unidadesInvalidas.length > 0 ? (
+                  <>
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
+                    <span>Informe horário e pessoas em: {unidadesInvalidas.map((u) => u.nome).join(", ")}</span>
+                  </>
+                ) : (
+                  <>
+                    <MessageCircle className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span>
+                      {unidadesAtivas.length > 0
+                        ? `${unidadesAtivas.length} ${unidadesAtivas.length === 1 ? "unidade pronta" : "unidades prontas"} para envio`
+                        : "Preencha ao menos uma unidade para enviar"}
+                    </span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                {unidadesAtivas.length > 0 && (
+                  <Button variant="ghost" onClick={handleLimparTudo} disabled={enviando} className="tap">
+                    Limpar tudo
+                  </Button>
+                )}
+                <Button
+                  onClick={handleConcluir}
+                  disabled={!podeEnviar || enviando}
+                  className="tap min-h-11 flex-1 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 sm:flex-none"
+                  aria-label="Concluir, copiar mensagem e abrir o grupo"
+                >
+                  {copiado ? <Check className="size-4" aria-hidden="true" /> : <Send className="size-4" aria-hidden="true" />}
+                  {enviando ? "Enviando..." : "Concluir"}
+                </Button>
+              </div>
+            </div>
           </footer>
         </>
       )}

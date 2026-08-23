@@ -159,7 +159,42 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-background text-foreground;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior-y: none;
+  }
+  button,
+  [role="button"],
+  [role="radio"] {
+    touch-action: manipulation;
+  }
+}
+
+@layer utilities {
+  /* Feedback tátil padrão para elementos tocáveis — "aperta" visualmente ao toque. */
+  .tap {
+    @apply transition-transform duration-100 active:scale-[0.96];
+  }
+  .safe-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .safe-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pop-in {
+    animation: pop-in 0.18s ease-out;
+  }
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(1.35);
+  }
+  100% {
+    transform: scale(1);
   }
 }

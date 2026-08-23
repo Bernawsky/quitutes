@@ -12,19 +12,32 @@ function Dialog(props: DialogPrimitive.Root.Props) {
 function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.Props) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Backdrop className="fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm" />
+      <DialogPrimitive.Backdrop
+        className={cn(
+          "fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm transition-opacity duration-200",
+          "data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
+        )}
+      />
       <DialogPrimitive.Popup
         data-slot="dialog-content"
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-border bg-background p-5 shadow-xl",
+          // Mobile: folha que sobe do rodapé, colada nas bordas inferiores (padrão de app).
+          "safe-bottom fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 pt-3 shadow-xl transition-transform duration-300 ease-out",
+          "data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full",
+          // A partir de sm: modal centralizado tradicional (limpa left/right/bottom herdados do inset-x-0/bottom-0).
+          "sm:top-1/2 sm:right-auto sm:bottom-auto sm:left-1/2 sm:max-h-[90vh] sm:w-auto sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:pt-5",
+          "sm:data-[ending-style]:translate-y-0 sm:data-[ending-style]:scale-95 sm:data-[ending-style]:opacity-0",
+          "sm:data-[starting-style]:translate-y-0 sm:data-[starting-style]:scale-95 sm:data-[starting-style]:opacity-0",
           className,
         )}
         {...props}
       >
+        {/* Alça de arraste — só faz sentido na folha mobile */}
+        <div className="mx-auto mb-3 h-1.5 w-10 shrink-0 rounded-full bg-border sm:hidden" aria-hidden="true" />
         {children}
         <DialogPrimitive.Close
           aria-label="Fechar"
-          className="absolute right-4 top-4 flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+          className="tap absolute right-4 top-4 flex size-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground active:bg-secondary"
         >
           <X className="size-4" aria-hidden="true" />
         </DialogPrimitive.Close>

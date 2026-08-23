@@ -80,13 +80,14 @@ function Stepper({
         onClick={() => onChange(Math.max(0, valor - 1))}
         disabled={valor <= 0}
         aria-label={`Diminuir ${rotulo}`}
-        className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 disabled:cursor-not-allowed disabled:opacity-40"
+        className="tap flex size-9 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 active:bg-muted disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
       >
         <Minus className="size-4" aria-hidden="true" />
       </button>
       <span
-        className={cn("w-6 text-center text-sm font-semibold tabular-nums", invalido ? "text-destructive" : "text-foreground")}
+        className={cn("pop-in w-6 text-center text-base font-semibold tabular-nums", invalido ? "text-destructive" : "text-foreground")}
         aria-live="polite"
+        key={valor}
       >
         {valor}
       </span>
@@ -94,7 +95,7 @@ function Stepper({
         type="button"
         onClick={() => onChange(valor + 1)}
         aria-label={`Aumentar ${rotulo}`}
-        className="flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50"
+        className="tap flex size-9 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 active:bg-muted"
       >
         <Plus className="size-4" aria-hidden="true" />
       </button>
@@ -128,7 +129,7 @@ export function UnidadeCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 rounded-2xl border p-5 transition-colors",
+        "flex flex-col gap-4 rounded-2xl border p-5 transition-[background-color,border-color,box-shadow] duration-200",
         exibirErro ? "border-destructive bg-card shadow-sm" : ativo ? "border-accent bg-accent shadow-sm" : "border-border bg-card",
       )}
     >
@@ -148,7 +149,7 @@ export function UnidadeCard({
           <button
             type="button"
             onClick={() => onLimpar(unidade.id)}
-            className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground"
+            className="tap flex items-center gap-1 rounded-md px-2.5 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-background/60 hover:text-foreground active:bg-background/80"
           >
             <X className="size-3.5" aria-hidden="true" />
             Limpar
@@ -189,12 +190,12 @@ export function UnidadeCard({
                   onHorario(unidade.id, selecionado ? "" : h)
                 }}
                 className={cn(
-                  "rounded-lg border px-3 py-2 text-sm font-bold transition-colors",
+                  "tap min-h-11 rounded-lg border px-3 py-2 text-sm font-bold transition-colors disabled:active:scale-100",
                   selecionado
                     ? "border-primary bg-primary text-primary-foreground disabled:opacity-100"
                     : mostrarErros && erroHorario
-                      ? "border-destructive bg-background text-foreground hover:border-destructive"
-                      : "border-input bg-background text-foreground hover:border-primary/50",
+                      ? "border-destructive bg-background text-foreground hover:border-destructive active:bg-destructive/10"
+                      : "border-input bg-background text-foreground hover:border-primary/50 active:bg-muted",
                 )}
               >
                 {h}
@@ -277,8 +278,10 @@ export function UnidadeCard({
                 aria-pressed={marcado}
                 onClick={() => onDieta(unidade.id, d.key, !marcado)}
                 className={cn(
-                  "flex items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
-                  marcado ? "border-primary bg-primary/10 text-foreground" : "border-input bg-background text-muted-foreground hover:border-primary/50",
+                  "tap flex min-h-9 items-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-medium transition-colors",
+                  marcado
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-input bg-background text-muted-foreground hover:border-primary/50 active:bg-muted",
                 )}
               >
                 {Icone && <Icone className={cn("size-3.5", marcado ? "text-primary" : "text-muted-foreground")} aria-hidden="true" />}

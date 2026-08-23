@@ -2,8 +2,9 @@
 
 import { useState, useTransition } from "react"
 import { toast } from "sonner"
-import { Save, X } from "lucide-react"
+import { Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { UnidadeCard, type Unidade } from "@/components/unidade-card"
 import { copiarTexto } from "@/components/reservas-app"
 import { editarPedidoPousada } from "@/lib/pedidos-api"
@@ -88,24 +89,12 @@ export function EditarPedidoDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-foreground/50 p-4 backdrop-blur-sm">
-      <div className="my-8 w-full max-w-3xl rounded-2xl border border-border bg-background p-5 shadow-xl">
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div>
-            <h2 className="font-heading text-lg font-bold text-foreground">Editar pedido #{pedido.id}</h2>
-            <p className="text-sm text-muted-foreground">
-              As alterações são validadas no servidor e a mensagem atualizada é enviada ao grupo.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fechar edição"
-            className="flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-secondary"
-          >
-            <X className="size-4" aria-hidden="true" />
-          </button>
-        </div>
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="sm:max-w-3xl">
+        <DialogHeader>
+          <DialogTitle>Editar pedido #{pedido.id}</DialogTitle>
+          <DialogDescription>As alterações são validadas no servidor e a mensagem atualizada é enviada ao grupo.</DialogDescription>
+        </DialogHeader>
 
         <label className="mb-4 flex flex-col gap-1.5">
           <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
@@ -155,16 +144,16 @@ export function EditarPedidoDialog({
           ))}
         </div>
 
-        <div className="mt-5 flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} disabled={pending}>
+        <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={pending} className="tap min-h-11">
             Cancelar
           </Button>
-          <Button onClick={salvar} disabled={pending} className="gap-2">
+          <Button onClick={salvar} disabled={pending} className="tap min-h-11 gap-2">
             <Save className="size-4" aria-hidden="true" />
             {pending ? "Salvando..." : "Salvar e enviar"}
           </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   )
 }

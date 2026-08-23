@@ -161,7 +161,7 @@ export function PousadaLogin({ pousadaFixa }: Props) {
             </div>
           </label>
 
-          <Button type="submit" disabled={enviando || !selecionado} className="gap-2">
+          <Button type="submit" disabled={enviando || !selecionado} className="tap min-h-11 gap-2">
             <LogIn className="size-4" aria-hidden="true" />
             {enviando ? "Entrando..." : "Entrar"}
           </Button>
