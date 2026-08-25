@@ -215,3 +215,12 @@
     transform: scale(1);
   }
 }
+
+/* Fora de qualquer @layer para sempre vencer as classes utilitárias (text-sm etc):
+   no iOS, um campo com fonte abaixo de 16px faz o Safari dar zoom automático ao
+   focar — isso é o que estava "dando zoom" ao abrir o teclado nas outras páginas. */
+input,
+select,
+textarea {
+  font-size: 16px !important;
+}
