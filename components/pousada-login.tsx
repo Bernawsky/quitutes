@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogIn, Lock, ShieldCheck, Building2 } from "lucide-react"
+import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -46,6 +46,7 @@ export function PousadaLogin({ pousadaFixa }: Props) {
   const [selecionado, setSelecionado] = useState(pousadaFixa?.slug ?? "")
   const [senha, setSenha] = useState("")
   const [enviando, setEnviando] = useState(false)
+  const [mostrarSenha, setMostrarSenha] = useState(false)
 
   useEffect(() => {
     if (pousadaFixa) return
@@ -148,9 +149,10 @@ export function PousadaLogin({ pousadaFixa }: Props) {
           <label className="flex flex-col gap-1.5">
             <span className="text-xs font-medium text-muted-foreground">Senha</span>
             <div className="flex items-center gap-2 rounded-lg border border-input bg-background px-3 focus-within:border-ring focus-within:ring-2 focus-within:ring-ring/30">
-              <Lock className="size-4 text-muted-foreground" aria-hidden="true" />
+              <Lock className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
               <input
-                type="password"
+                type={mostrarSenha ? "text" : "password"}
+                name="password"
                 required
                 autoComplete="current-password"
                 value={senha}
@@ -158,6 +160,15 @@ export function PousadaLogin({ pousadaFixa }: Props) {
                 className="w-full bg-transparent py-2.5 text-sm text-foreground outline-none"
                 placeholder="••••"
               />
+              <button
+                type="button"
+                onClick={() => setMostrarSenha((v) => !v)}
+                aria-label={mostrarSenha ? "Ocultar senha" : "Mostrar senha"}
+                aria-pressed={mostrarSenha}
+                className="tap flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground active:bg-muted"
+              >
+                {mostrarSenha ? <EyeOff className="size-4" aria-hidden="true" /> : <Eye className="size-4" aria-hidden="true" />}
+              </button>
             </div>
           </label>
 

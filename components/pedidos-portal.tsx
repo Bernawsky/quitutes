@@ -3,11 +3,9 @@
 import { useCallback, useEffect, useState } from "react"
 import { WifiOff } from "lucide-react"
 import { usePousadaSessao } from "@/hooks/use-pousada"
-import { useSplashDiario } from "@/hooks/use-splash-diario"
 import { PousadaLogin } from "@/components/pousada-login"
 import { ReservasApp } from "@/components/reservas-app"
 import { TelaCarregando } from "@/components/tela-carregando"
-import { SplashBranding } from "@/components/splash-branding"
 import { Button } from "@/components/ui/button"
 import { getPousadaPorSlug } from "@/lib/pousadas-api"
 import { supabase } from "@/lib/supabase/client"
@@ -19,7 +17,6 @@ export function PedidosPortal({ slug }: { slug?: string }) {
   const [pousadaFixa, setPousadaFixa] = useState<Pousada | null | undefined>(slug ? undefined : null)
   const [erroConexao, setErroConexao] = useState(false)
   const [tentativa, setTentativa] = useState(0)
-  const { mostrarSplash, splashVerificado, concluirSplash } = useSplashDiario()
 
   useEffect(() => {
     if (!slug) return
@@ -46,14 +43,6 @@ export function PedidosPortal({ slug }: { slug?: string }) {
   }, [slug, tentativa])
 
   const tentarNovamente = useCallback(() => setTentativa((t) => t + 1), [])
-
-  // Primeira abertura do dia: toca o vídeo inteiro uma vez, como afirmação de marca.
-  if (!splashVerificado) {
-    return <TelaCarregando />
-  }
-  if (mostrarSplash) {
-    return <SplashBranding onConcluir={concluirSplash} />
-  }
 
   if (erroConexao) {
     return (
