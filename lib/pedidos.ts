@@ -74,15 +74,24 @@ export type Pedido = {
   data_pedido: string
 }
 
-// A cesta é uma encomenda: enviada hoje, mas sempre para o dia seguinte.
+function formatarSaudacao(d: Date): string {
+  const semana = d.toLocaleDateString("pt-BR", { weekday: "long" })
+  const dia = String(d.getDate()).padStart(2, "0")
+  const mes = String(d.getMonth() + 1).padStart(2, "0")
+  const ano = String(d.getFullYear()).slice(-2)
+  return `☕Olá, café para (${semana}) ${dia}/${mes}/${ano}`
+}
+
+// A cesta é uma encomenda: enviada hoje, mas sempre para o dia seguinte (padrão sem antecipação).
 export function dataSaudacao(d = new Date()): string {
   const amanha = new Date(d)
   amanha.setDate(amanha.getDate() + 1)
-  const semana = amanha.toLocaleDateString("pt-BR", { weekday: "long" })
-  const dia = String(amanha.getDate()).padStart(2, "0")
-  const mes = String(amanha.getMonth() + 1).padStart(2, "0")
-  const ano = String(amanha.getFullYear()).slice(-2)
-  return `☕Olá, café para (${semana}) ${dia}/${mes}/${ano}`
+  return formatarSaudacao(amanha)
+}
+
+/** Mesma saudação, mas para uma data de entrega (yyyy-mm-dd) escolhida diretamente — usado ao antecipar pedidos. */
+export function dataSaudacaoPara(dataPedidoISO: string): string {
+  return formatarSaudacao(dataLocal(dataPedidoISO))
 }
 
 function paraISO(d: Date): string {

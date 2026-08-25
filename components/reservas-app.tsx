@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
-import { LINK_GRUPO, dataSaudacao, gerarMensagem, hojeISO, amanhaISO, rotuloData } from "@/lib/pedidos"
+import { LINK_GRUPO, dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData } from "@/lib/pedidos"
 import { salvarPedido } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -52,11 +52,19 @@ export function copiarFallback(texto: string): boolean {
 
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
   const [aba, setAba] = useState<"novo" | "meus">("novo")
-  const [saudacao, setSaudacao] = useState(dataSaudacao())
+  const [saudacao, setSaudacao] = useState(dataSaudacaoPara(amanhaISO()))
+  const [saudacaoEditada, setSaudacaoEditada] = useState(false)
   const [dataPedido, setDataPedido] = useState(amanhaISO())
   const [enviando, setEnviando] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [mostrarErros, setMostrarErros] = useState(false)
+
+  // Enquanto a pessoa não mexer no texto, a saudação acompanha a data escolhida em "Café para".
+  const mudarDataPedido = (novaData: string) => {
+    setDataPedido(novaData)
+    if (!saudacaoEditada) setSaudacao(dataSaudacaoPara(novaData))
+    setCopiado(false)
+  }
 
   const {
     unidades,
@@ -199,6 +207,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
                     value={saudacao}
                     onChange={(e) => {
                       setSaudacao(e.target.value)
+                      setSaudacaoEditada(true)
                       setCopiado(false)
                     }}
                     placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
@@ -221,10 +230,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
                       <Calendario
                         valor={dataPedido}
                         minimo={hojeISO()}
-                        onSelecionar={(d) => {
-                          setDataPedido(d)
-                          setCopiado(false)
-                        }}
+                        onSelecionar={mudarDataPedido}
                       />
                     </PopoverContent>
                   </Popover>
