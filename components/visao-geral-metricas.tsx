@@ -100,8 +100,8 @@ export function VisaoGeralMetricas() {
           <p className="mt-1 text-sm text-muted-foreground">Ajuste os filtros ou aguarde novos envios.</p>
         </div>
       ) : (
-        <AoEntrar className="grid gap-4 lg:grid-cols-2" atraso={80}>
-          <section className="rounded-xl border border-border bg-card p-4">
+        <AoEntrar className="grid min-w-0 gap-4 lg:grid-cols-2" atraso={80}>
+          <section className="min-w-0 rounded-xl border border-border bg-card p-4 overflow-hidden">
             <h2 className="mb-3 font-heading text-sm font-semibold text-card-foreground">Pedidos e pessoas por período</h2>
             <ChartContainer config={chartConfig} className="h-56 w-full">
               <BarChart data={serie} accessibilityLayer>

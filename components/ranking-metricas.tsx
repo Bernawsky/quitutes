@@ -12,10 +12,10 @@ export function RankingMetricas({ porUnidade, porPousada }: { porUnidade: ItemRa
   const max = itens[0]?.valor ?? 0
 
   return (
-    <section className="rounded-xl border border-border bg-card p-4">
-      <div className="mb-3 flex items-center justify-between gap-2">
+    <section className="min-w-0 overflow-hidden rounded-xl border border-border bg-card p-4">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-heading text-sm font-semibold text-card-foreground">Ranking</h2>
-        <div className="inline-flex rounded-lg bg-muted p-0.5">
+        <div className="inline-flex shrink-0 rounded-lg bg-muted p-0.5">
           <button
             type="button"
             onClick={() => setAba("pousada")}
