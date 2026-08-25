@@ -13,11 +13,12 @@ export async function GET(request: Request) {
   const admin = createAdminSupabaseClient()
   const seteDiasAtras = new Date()
   seteDiasAtras.setDate(seteDiasAtras.getDate() - 7)
+  const seteDiasAtrasISO = seteDiasAtras.toISOString().slice(0, 10)
 
   const { data: pedidos, error } = await admin
     .from("pedidos")
-    .select("pousada, total_pessoas, status, created_at")
-    .gte("created_at", seteDiasAtras.toISOString())
+    .select("pousada, total_pessoas, status, data_pedido")
+    .gte("data_pedido", seteDiasAtrasISO)
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const ativos = (pedidos ?? []).filter((p) => p.status !== "cancelado")

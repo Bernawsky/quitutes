@@ -71,6 +71,7 @@ export type Pedido = {
   motivo_cancelamento?: string | null
   cancelado_at?: string | null
   updated_at?: string
+  data_pedido: string
 }
 
 // A cesta é uma encomenda: enviada hoje, mas sempre para o dia seguinte.
@@ -82,6 +83,43 @@ export function dataSaudacao(d = new Date()): string {
   const mes = String(amanha.getMonth() + 1).padStart(2, "0")
   const ano = String(amanha.getFullYear()).slice(-2)
   return `☕Olá, café para (${semana}) ${dia}/${mes}/${ano}`
+}
+
+function paraISO(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+}
+
+/** Data (yyyy-mm-dd, fuso local) de hoje. */
+export function hojeISO(): string {
+  return paraISO(new Date())
+}
+
+/**
+ * Converte "yyyy-mm-dd" num Date à meia-noite local. `new Date("yyyy-mm-dd")` interpreta
+ * como UTC, o que desloca o dia em fusos negativos (ex: Brasil) — por isso não usamos direto.
+ */
+export function dataLocal(dataISO: string): Date {
+  const [ano, mes, dia] = dataISO.split("-").map(Number)
+  return new Date(ano!, mes! - 1, dia!)
+}
+
+/** Data (yyyy-mm-dd, fuso local) de amanhã — quando um pedido normal (não antecipado) é servido. */
+export function amanhaISO(): string {
+  const d = new Date()
+  d.setDate(d.getDate() + 1)
+  return paraISO(d)
+}
+
+/** Só é possível editar/cancelar enquanto a data de entrega ainda não chegou (até a véspera). */
+export function podeEditarPedido(pedido: Pick<Pedido, "data_pedido">): boolean {
+  return pedido.data_pedido > hojeISO()
+}
+
+/** "Hoje", "Amanhã" ou a data por extenso, a partir de uma data yyyy-mm-dd. */
+export function rotuloData(dataISO: string): string {
+  if (dataISO === hojeISO()) return "Hoje"
+  if (dataISO === amanhaISO()) return "Amanhã"
+  return dataLocal(dataISO).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })
 }
 
 // Observações de uma unidade: dietas em negrito + itens + texto livre

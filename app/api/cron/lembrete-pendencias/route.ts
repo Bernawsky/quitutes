@@ -11,8 +11,7 @@ export async function GET(request: Request) {
   }
 
   const admin = createAdminSupabaseClient()
-  const inicioDoDia = new Date()
-  inicioDoDia.setHours(0, 0, 0, 0)
+  const hoje = new Date().toISOString().slice(0, 10)
 
   const { data: pousadas, error: erroPousadas } = await admin.from("pousadas").select("id, nome").eq("ativa", true)
   if (erroPousadas) return NextResponse.json({ error: erroPousadas.message }, { status: 500 })
@@ -21,7 +20,7 @@ export async function GET(request: Request) {
     .from("pedidos")
     .select("pousada_id")
     .neq("status", "cancelado")
-    .gte("created_at", inicioDoDia.toISOString())
+    .eq("data_pedido", hoje)
   if (erroPedidos) return NextResponse.json({ error: erroPedidos.message }, { status: 500 })
 
   const comPedido = new Set((pedidosHoje ?? []).map((p) => p.pousada_id))

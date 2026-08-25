@@ -1,6 +1,6 @@
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
-import { normalizarHorario, observacoesUnidade, type Pedido } from "@/lib/pedidos"
+import { dataLocal, normalizarHorario, observacoesUnidade, type Pedido } from "@/lib/pedidos"
 
 function baixar(conteudo: BlobPart, nome: string, tipo: string) {
   const url = URL.createObjectURL(new Blob([conteudo], { type: tipo }))
@@ -22,17 +22,22 @@ function dataBR(iso: string) {
   return new Date(iso).toLocaleString("pt-BR")
 }
 
+function dataPedidoBR(dataPedidoISO: string) {
+  return dataLocal(dataPedidoISO).toLocaleDateString("pt-BR")
+}
+
 export type Ranking = { unidade: string; total: number }
 
 export function exportarPedidosCSV(pedidos: Pedido[], ranking: Ranking[], sufixo: string) {
   const linhas: string[] = []
   linhas.push("PEDIDOS")
-  linhas.push(["ID", "Data", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"].map(csvCampo).join(";"))
+  linhas.push(["ID", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"].map(csvCampo).join(";"))
   for (const p of pedidos) {
     for (const u of p.unidades ?? []) {
       linhas.push(
         [
           p.id,
+          dataPedidoBR(p.data_pedido),
           dataBR(p.created_at),
           p.pousada ?? "Vale do Sol",
           p.status === "cancelado" ? "Cancelado" : "Ativo",
@@ -69,10 +74,11 @@ export function exportarPedidosPDF(
 
   autoTable(doc, {
     startY: 30,
-    head: [["ID", "Data", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"]],
+    head: [["ID", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"]],
     body: pedidos.flatMap((p) =>
       (p.unidades ?? []).map((u) => [
         String(p.id),
+        dataPedidoBR(p.data_pedido),
         dataBR(p.created_at),
         p.pousada ?? "Vale do Sol",
         p.status === "cancelado" ? "Cancelado" : "Ativo",

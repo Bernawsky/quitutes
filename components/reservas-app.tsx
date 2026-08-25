@@ -1,37 +1,18 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
-import { UnidadeCard, type Unidade } from "@/components/unidade-card"
+import { UnidadeCard } from "@/components/unidade-card"
 import { MeusPedidos } from "@/components/meus-pedidos"
 import { Button } from "@/components/ui/button"
-import { LINK_GRUPO, dataSaudacao, gerarMensagem, type UnidadePedido } from "@/lib/pedidos"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Calendario } from "@/components/calendario"
+import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
+import { LINK_GRUPO, dataSaudacao, gerarMensagem, hojeISO, amanhaISO, rotuloData } from "@/lib/pedidos"
 import { salvarPedido } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
-
-function criarUnidades(pousada: Pousada): Unidade[] {
-  return pousada.unidades.map((u, i) => ({
-    id: i + 1,
-    nome: u.nome,
-    ...(u.isSuite ? { isSuite: true } : {}),
-    horario: "",
-    pessoas: 0,
-    itens: {} as Record<string, number>,
-    dietas: [] as string[],
-    observacao: "",
-  }))
-}
-
-/**
- * Pousadas com um único horário disponível têm o horário fixo: só é gravado no
- * estado da unidade quando ela passa a ter algo preenchido (evita que todas as
- * unidades apareçam como "ativas" só porque o horário já vem definido).
- */
-function comHorarioFixo(pousada: Pousada, u: Unidade): string {
-  return pousada.horarios.length === 1 && !u.horario ? pousada.horarios[0]! : u.horario
-}
 
 /**
  * Copia de forma síncrona dentro do gesto do usuário.
@@ -72,91 +53,27 @@ export function copiarFallback(texto: string): boolean {
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
   const [aba, setAba] = useState<"novo" | "meus">("novo")
   const [saudacao, setSaudacao] = useState(dataSaudacao())
-  const [unidades, setUnidades] = useState<Unidade[]>(() => criarUnidades(pousada))
+  const [dataPedido, setDataPedido] = useState(amanhaISO())
   const [enviando, setEnviando] = useState(false)
   const [copiado, setCopiado] = useState(false)
   const [mostrarErros, setMostrarErros] = useState(false)
 
-  const handleHorario = (id: number, horario: string) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario } : u)))
-    setCopiado(false)
-  }
-
-  const handlePessoas = (id: number, pessoas: number) => {
-    setUnidades((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, pessoas, horario: pessoas > 0 ? comHorarioFixo(pousada, u) : u.horario } : u)),
-    )
-    setCopiado(false)
-  }
-
-  const handleItem = (id: number, key: string, qtd: number) => {
-    setUnidades((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u
-        const itens = { ...u.itens }
-        if (qtd > 0) itens[key] = qtd
-        else delete itens[key]
-        return { ...u, itens, horario: qtd > 0 ? comHorarioFixo(pousada, u) : u.horario }
-      }),
-    )
-    setCopiado(false)
-  }
-
-  const handleDieta = (id: number, key: string, ativo: boolean) => {
-    setUnidades((prev) =>
-      prev.map((u) => {
-        if (u.id !== id) return u
-        const dietas = ativo ? Array.from(new Set([...(u.dietas ?? []), key])) : (u.dietas ?? []).filter((d) => d !== key)
-        return { ...u, dietas, horario: ativo ? comHorarioFixo(pousada, u) : u.horario }
-      }),
-    )
-    setCopiado(false)
-  }
-
-  const handleObservacao = (id: number, texto: string) => {
-    setUnidades((prev) =>
-      prev.map((u) => (u.id === id ? { ...u, observacao: texto, horario: texto.trim() ? comHorarioFixo(pousada, u) : u.horario } : u)),
-    )
-    setCopiado(false)
-  }
-
-  const handleLimpar = (id: number) => {
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, horario: "", pessoas: 0, itens: {}, dietas: [], observacao: "" } : u)))
-  }
-
-  const handleLimparTudo = () => {
-    setUnidades(criarUnidades(pousada))
-    setCopiado(false)
-    setMostrarErros(false)
-  }
-
-  const unidadesAtivas = useMemo(
-    () =>
-      unidades.filter(
-        (u) => u.horario || u.pessoas > 0 || Object.values(u.itens).some((q) => q > 0) || (u.dietas?.length ?? 0) > 0 || u.observacao?.trim(),
-      ),
-    [unidades],
-  )
-
-  // Regra: toda unidade selecionada precisa de horário E quantidade de pessoas
-  const unidadesInvalidas = useMemo(() => unidadesAtivas.filter((u) => !u.horario || !(u.pessoas > 0)), [unidadesAtivas])
-
-  const payload: UnidadePedido[] = useMemo(
-    () =>
-      unidadesAtivas.map((u) => ({
-        unidade: u.nome,
-        horario: u.horario,
-        pessoas: u.pessoas,
-        itens: u.itens,
-        dietas: u.dietas ?? [],
-        observacao: u.observacao?.trim() ?? "",
-      })),
-    [unidadesAtivas],
-  )
+  const {
+    unidades,
+    handleHorario,
+    handlePessoas,
+    handleItem,
+    handleDieta,
+    handleObservacao,
+    handleLimpar,
+    handleLimparTudo,
+    unidadesAtivas,
+    unidadesInvalidas,
+    payload,
+    podeEnviar,
+  } = useUnidadesPedido(pousada)
 
   const mensagem = useMemo(() => gerarMensagem(saudacao, payload), [saudacao, payload])
-
-  const podeEnviar = unidadesAtivas.length > 0 && unidadesInvalidas.length === 0
 
   const handleConcluir = () => {
     if (enviando) return
@@ -194,7 +111,14 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
     }
 
     // 2) Salva o pedido para o dashboard de métricas
-    void salvarPedido({ titulo: saudacao.trim(), saudacao: saudacao.trim(), unidades: payload, pousadaId: pousada.id, pousada: pousada.nome })
+    void salvarPedido({
+      titulo: saudacao.trim(),
+      saudacao: saudacao.trim(),
+      unidades: payload,
+      pousadaId: pousada.id,
+      pousada: pousada.nome,
+      dataPedido,
+    })
       .catch(() => {
         toast.error("Não foi possível registrar o pedido nas métricas")
       })
@@ -267,19 +191,45 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
         <>
           <main className="mx-auto max-w-5xl px-4 py-6">
             <section className="mb-6 rounded-2xl border border-border bg-card p-5">
-              <label className="flex flex-col gap-1.5">
-                <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
-                <input
-                  type="text"
-                  value={saudacao}
-                  onChange={(e) => {
-                    setSaudacao(e.target.value)
-                    setCopiado(false)
-                  }}
-                  placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
-                  className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
-                />
-              </label>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <label className="flex flex-1 flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">Saudação / Data</span>
+                  <input
+                    type="text"
+                    value={saudacao}
+                    onChange={(e) => {
+                      setSaudacao(e.target.value)
+                      setCopiado(false)
+                    }}
+                    placeholder="Ex: ☕Olá, café para segunda-feira 07/08/25"
+                    className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+                  />
+                </label>
+
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-muted-foreground">Café para</span>
+                  <Popover>
+                    <PopoverTrigger
+                      render={
+                        <Button variant="outline" className="tap justify-start gap-2 sm:min-w-40">
+                          <CalendarDays className="size-4" aria-hidden="true" />
+                          {rotuloData(dataPedido)}
+                        </Button>
+                      }
+                    />
+                    <PopoverContent className="w-auto">
+                      <Calendario
+                        valor={dataPedido}
+                        minimo={hojeISO()}
+                        onSelecionar={(d) => {
+                          setDataPedido(d)
+                          setCopiado(false)
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              </div>
 
               {unidadesAtivas.length > 0 && (
                 <div className="mt-4">

@@ -5,24 +5,12 @@ import { toast } from "sonner"
 import { Save } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { UnidadeCard, type Unidade } from "@/components/unidade-card"
+import { UnidadeCard } from "@/components/unidade-card"
+import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
 import { copiarTexto } from "@/components/reservas-app"
 import { editarPedidoPousada } from "@/lib/pedidos-api"
-import { LINK_GRUPO, gerarMensagemEdicao, normalizarHorario, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { LINK_GRUPO, gerarMensagemEdicao, type Pedido } from "@/lib/pedidos"
 import type { Pousada } from "@/lib/pousadas"
-
-function paraUnidades(pedido: Pedido): Unidade[] {
-  return (pedido.unidades ?? []).map((u, i) => ({
-    id: i + 1,
-    nome: u.unidade,
-    isSuite: u.unidade.toLowerCase().includes("suíte"),
-    horario: normalizarHorario(u.horario),
-    pessoas: u.pessoas,
-    itens: u.itens ?? {},
-    dietas: u.dietas ?? [],
-    observacao: u.observacao ?? "",
-  }))
-}
 
 export function EditarPedidoDialog({
   pedido,
@@ -36,38 +24,24 @@ export function EditarPedidoDialog({
   onSalvo: () => void
 }) {
   const [saudacao, setSaudacao] = useState(pedido.saudacao || pedido.titulo || "")
-  const [unidades, setUnidades] = useState<Unidade[]>(() => paraUnidades(pedido))
   const [mostrarErros, setMostrarErros] = useState(false)
   const [pending, startTransition] = useTransition()
 
-  const horarios = pousada.horarios
-
-  const invalidas = unidades.filter((u) => !u.horario || !(u.pessoas > 0))
-
-  const atualizar = (id: number, patch: Partial<Unidade>) =>
-    setUnidades((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)))
+  const { unidades, handleHorario, handlePessoas, handleItem, handleDieta, handleObservacao, handleLimpar, unidadesAtivas, unidadesInvalidas, payload } =
+    useUnidadesPedido(pousada, pedido.unidades)
 
   const salvar = () => {
-    if (unidades.length === 0) {
+    if (unidadesAtivas.length === 0) {
       toast.error("O pedido precisa de ao menos uma cesta")
       return
     }
-    if (invalidas.length > 0) {
+    if (unidadesInvalidas.length > 0) {
       setMostrarErros(true)
       toast.error("Preencha horário e quantidade de pessoas", {
-        description: `Pendente em: ${invalidas.map((u) => u.nome).join(", ")}`,
+        description: `Pendente em: ${unidadesInvalidas.map((u) => u.nome).join(", ")}`,
       })
       return
     }
-
-    const payload: UnidadePedido[] = unidades.map((u) => ({
-      unidade: u.nome,
-      horario: u.horario,
-      pessoas: u.pessoas,
-      itens: u.itens,
-      dietas: u.dietas ?? [],
-      observacao: u.observacao?.trim() ?? "",
-    }))
 
     // Copia dentro do gesto do usuário
     copiarTexto(gerarMensagemEdicao(saudacao.trim(), payload))
@@ -93,7 +67,10 @@ export function EditarPedidoDialog({
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>Editar pedido #{pedido.id}</DialogTitle>
-          <DialogDescription>As alterações são validadas no servidor e a mensagem atualizada é enviada ao grupo.</DialogDescription>
+          <DialogDescription>
+            As alterações são validadas no servidor e a mensagem atualizada é enviada ao grupo. Unidades que ainda não estão no
+            pedido aparecem vazias — é só preencher pra incluí-las.
+          </DialogDescription>
         </DialogHeader>
 
         <label className="mb-4 flex flex-col gap-1.5">
@@ -111,35 +88,14 @@ export function EditarPedidoDialog({
             <UnidadeCard
               key={u.id}
               unidade={u}
-              horarios={horarios}
+              horarios={pousada.horarios}
               mostrarErros={mostrarErros}
-              onHorario={(id, horario) => atualizar(id, { horario })}
-              onPessoas={(id, pessoas) => atualizar(id, { pessoas })}
-              onItem={(id, key, qtd) =>
-                setUnidades((prev) =>
-                  prev.map((it) => {
-                    if (it.id !== id) return it
-                    const itens = { ...it.itens }
-                    if (qtd > 0) itens[key] = qtd
-                    else delete itens[key]
-                    return { ...it, itens }
-                  }),
-                )
-              }
-              onDieta={(id, key, ativo) =>
-                setUnidades((prev) =>
-                  prev.map((it) =>
-                    it.id === id
-                      ? {
-                          ...it,
-                          dietas: ativo ? Array.from(new Set([...(it.dietas ?? []), key])) : (it.dietas ?? []).filter((d) => d !== key),
-                        }
-                      : it,
-                  ),
-                )
-              }
-              onObservacao={(id, texto) => atualizar(id, { observacao: texto })}
-              onLimpar={(id) => setUnidades((prev) => prev.filter((it) => it.id !== id))}
+              onHorario={handleHorario}
+              onPessoas={handlePessoas}
+              onItem={handleItem}
+              onDieta={handleDieta}
+              onObservacao={handleObservacao}
+              onLimpar={handleLimpar}
             />
           ))}
         </div>

@@ -15,12 +15,12 @@ export async function GET(request: Request) {
 
   const supabase = createAdminSupabaseClient()
   const hoje = new Date()
-  const inicioDoDia = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate()).toISOString()
+  const hojeISO = hoje.toISOString().slice(0, 10)
 
   const { data, error } = await supabase
     .from("pedidos")
     .select("id, created_at, pousada, unidades, total_pessoas, status")
-    .gte("created_at", inicioDoDia)
+    .eq("data_pedido", hojeISO)
     .neq("status", "cancelado")
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

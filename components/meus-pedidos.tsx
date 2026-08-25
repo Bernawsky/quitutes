@@ -2,10 +2,10 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Clock, Pencil, Ban, ShoppingBasket } from "lucide-react"
+import { Clock, Pencil, Ban, ShoppingBasket, CalendarDays, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getMeusPedidos } from "@/lib/pedidos-api"
-import { normalizarHorario, observacoesUnidade, type Pedido } from "@/lib/pedidos"
+import { normalizarHorario, observacoesUnidade, podeEditarPedido, rotuloData, type Pedido } from "@/lib/pedidos"
 import { EditarPedidoDialog } from "@/components/editar-pedido-dialog"
 import { CancelarPedidoDialog } from "@/components/cancelar-pedido-dialog"
 import type { Pousada } from "@/lib/pousadas"
@@ -33,31 +33,44 @@ export function MeusPedidos({ pousada }: { pousada: Pousada }) {
     <div className="flex flex-col gap-3">
       {pedidos.map((p) => {
         const cancelado = p.status === "cancelado"
+        const editavel = podeEditarPedido(p)
         return (
           <div key={p.id} className={"rounded-2xl border p-4 " + (cancelado ? "border-destructive/40 bg-destructive/5" : "border-border bg-card")}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <p className="text-sm font-semibold text-card-foreground">
-                  #{p.id} — {p.saudacao || p.titulo}
-                </p>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <p className="text-sm font-semibold text-card-foreground">
+                    #{p.id} — {p.saudacao || p.titulo}
+                  </p>
+                  <span className="flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[11px] font-semibold text-primary">
+                    <CalendarDays className="size-3" aria-hidden="true" />
+                    {rotuloData(p.data_pedido)}
+                  </span>
+                </div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3.5" aria-hidden="true" />
                   {new Date(p.created_at).toLocaleString("pt-BR")} • {p.total_unidades} cesta(s) • {p.total_pessoas} pessoa(s)
                   {cancelado ? " • Cancelado" : ""}
                 </p>
               </div>
-              {!cancelado && (
-                <div className="flex gap-2">
-                  <Button variant="outline" className="gap-2" onClick={() => setEditando(p)}>
-                    <Pencil className="size-4" aria-hidden="true" />
-                    Editar
-                  </Button>
-                  <Button variant="destructive" className="gap-2" onClick={() => setCancelando(p)}>
-                    <Ban className="size-4" aria-hidden="true" />
-                    Cancelar
-                  </Button>
-                </div>
-              )}
+              {!cancelado &&
+                (editavel ? (
+                  <div className="flex gap-2">
+                    <Button variant="outline" className="tap gap-2" onClick={() => setEditando(p)}>
+                      <Pencil className="size-4" aria-hidden="true" />
+                      Editar
+                    </Button>
+                    <Button variant="destructive" className="tap gap-2" onClick={() => setCancelando(p)}>
+                      <Ban className="size-4" aria-hidden="true" />
+                      Cancelar
+                    </Button>
+                  </div>
+                ) : (
+                  <span className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground">
+                    <Lock className="size-3.5" aria-hidden="true" />
+                    Prazo encerrado
+                  </span>
+                ))}
             </div>
             <ul className="mt-3 flex flex-col gap-1">
               {(p.unidades ?? []).map((u, i) => {

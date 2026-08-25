@@ -20,6 +20,7 @@ export type Database = {
           cancelado_at: string | null
           updated_at: string
           atualizado_por: string | null
+          data_pedido: string
         }
         Insert: {
           id?: number
@@ -37,6 +38,7 @@ export type Database = {
           cancelado_at?: string | null
           updated_at?: string
           atualizado_por?: string | null
+          data_pedido?: string
         }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
         Relationships: []

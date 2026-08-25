@@ -4,7 +4,7 @@ import { useEffect, useMemo } from "react"
 import useSWR, { mutate as mutateGlobal } from "swr"
 import { getPedidos } from "@/lib/pedidos-api"
 import { getPousadas } from "@/lib/pousadas-api"
-import type { Pedido } from "@/lib/pedidos"
+import { dataLocal, hojeISO, type Pedido } from "@/lib/pedidos"
 import { supabase } from "@/lib/supabase/client"
 import { useFiltrosMetricas, type Periodo } from "@/hooks/use-filtros-metricas"
 
@@ -15,8 +15,7 @@ export const LABEL_PERIODO: Record<Periodo, string> = {
   ano: "neste ano",
 }
 
-function dentroDoPeriodo(dataStr: string, periodo: Periodo): boolean {
-  const data = new Date(dataStr)
+function dentroDoPeriodo(data: Date, periodo: Periodo): boolean {
   const agora = new Date()
   switch (periodo) {
     case "dia":
@@ -35,8 +34,7 @@ function dentroDoPeriodo(dataStr: string, periodo: Periodo): boolean {
 }
 
 /** Mesmo tamanho de janela do período selecionado, mas imediatamente anterior — para o comparativo. */
-function dentroDoPeriodoAnterior(dataStr: string, periodo: Periodo): boolean {
-  const data = new Date(dataStr)
+function dentroDoPeriodoAnterior(data: Date, periodo: Periodo): boolean {
   const agora = new Date()
   switch (periodo) {
     case "dia": {
@@ -62,8 +60,7 @@ function dentroDoPeriodoAnterior(dataStr: string, periodo: Periodo): boolean {
   }
 }
 
-export function chaveGrafico(dataStr: string, periodo: Periodo): string {
-  const data = new Date(dataStr)
+export function chaveGrafico(data: Date, periodo: Periodo): string {
   if (periodo === "dia") return `${String(data.getHours()).padStart(2, "0")}h`
   if (periodo === "semana") return data.toLocaleDateString("pt-BR", { weekday: "short" })
   if (periodo === "mes") return `${String(data.getDate()).padStart(2, "0")}/${String(data.getMonth() + 1).padStart(2, "0")}`
@@ -103,9 +100,9 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
   const filtrados = useMemo(() => {
     const termo = busca.trim().toLowerCase()
     return pedidos.filter((p) => {
-      if (!dentroDoPeriodo(p.created_at, periodo)) return false
+      if (!dentroDoPeriodo(dataLocal(p.data_pedido), periodo)) return false
       if (pousadasSelecionadas.length > 0 && !pousadasSelecionadas.includes(p.pousada ?? "")) return false
-      if (dataExata && new Date(p.created_at).toISOString().slice(0, 10) !== dataExata) return false
+      if (dataExata && p.data_pedido !== dataExata) return false
       if (termo) {
         const alvo = [p.pousada, p.saudacao, p.titulo, ...(p.unidades ?? []).map((u) => u.unidade)].join(" ").toLowerCase()
         if (!alvo.includes(termo)) return false
@@ -121,7 +118,7 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
       pedidos.filter(
         (p) =>
           p.status !== "cancelado" &&
-          dentroDoPeriodoAnterior(p.created_at, periodo) &&
+          dentroDoPeriodoAnterior(dataLocal(p.data_pedido), periodo) &&
           (pousadasSelecionadas.length === 0 || pousadasSelecionadas.includes(p.pousada ?? "")),
       ),
     [pedidos, periodo, pousadasSelecionadas],
@@ -154,7 +151,7 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
   const serie = useMemo(() => {
     const mapa = new Map<string, { periodo: string; pedidos: number; pessoas: number }>()
     for (const p of ativos) {
-      const chave = chaveGrafico(p.created_at, periodo)
+      const chave = chaveGrafico(dataLocal(p.data_pedido), periodo)
       const atual = mapa.get(chave) ?? { periodo: chave, pedidos: 0, pessoas: 0 }
       atual.pedidos += 1
       atual.pessoas += p.total_pessoas ?? 0
@@ -190,9 +187,9 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
   }, [ativos])
 
   const pendencias = useMemo(() => {
-    const hoje = new Date().toDateString()
+    const hoje = hojeISO()
     const pousadasComPedidoHoje = new Set(
-      pedidos.filter((p) => p.status !== "cancelado" && new Date(p.created_at).toDateString() === hoje).map((p) => p.pousada_id),
+      pedidos.filter((p) => p.status !== "cancelado" && p.data_pedido === hoje).map((p) => p.pousada_id),
     )
     return pousadas.filter((p) => !pousadasComPedidoHoje.has(p.id))
   }, [pedidos, pousadas])

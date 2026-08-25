@@ -1,9 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Clock, ChevronDown, Ban } from "lucide-react"
+import { Search, Clock, ChevronDown, Ban, CalendarDays } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { normalizarHorario, observacoesUnidade } from "@/lib/pedidos"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
+import { Calendario } from "@/components/calendario"
+import { normalizarHorario, observacoesUnidade, rotuloData } from "@/lib/pedidos"
 import { useDadosMetricas } from "@/hooks/use-dados-metricas"
 import { AoEntrar } from "@/components/ao-entrar"
 import { cn } from "@/lib/utils"
@@ -27,12 +29,19 @@ export function PedidosMetricas() {
             className="w-full bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground/60"
           />
         </div>
-        <input
-          type="date"
-          value={dataExata}
-          onChange={(e) => setDataExata(e.target.value)}
-          className="rounded-xl border border-border bg-card px-3 py-2 text-sm text-foreground outline-none"
-        />
+        <Popover>
+          <PopoverTrigger
+            render={
+              <Button variant="outline" className="tap gap-2">
+                <CalendarDays className="size-4" aria-hidden="true" />
+                {dataExata ? rotuloData(dataExata) : "Data"}
+              </Button>
+            }
+          />
+          <PopoverContent className="w-auto">
+            <Calendario valor={dataExata} onSelecionar={setDataExata} />
+          </PopoverContent>
+        </Popover>
         {(busca || dataExata) && (
           <Button
             variant="ghost"
@@ -78,7 +87,7 @@ export function PedidosMetricas() {
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="size-3 shrink-0" aria-hidden="true" />
-                      {new Date(p.created_at).toLocaleString("pt-BR")} • {p.total_unidades} cesta(s) • {p.total_pessoas} pessoa(s)
+                      Entrega: {rotuloData(p.data_pedido)} • {p.total_unidades} cesta(s) • {p.total_pessoas} pessoa(s)
                     </p>
                   </div>
                   {cancelado && (

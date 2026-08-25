@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase/client"
-import { contarItens, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { amanhaISO, contarItens, type Pedido, type UnidadePedido } from "@/lib/pedidos"
 import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 
 const COLUNAS =
-  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at"
+  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido"
 
 export async function salvarPedido(input: {
   titulo: string
@@ -11,6 +11,8 @@ export async function salvarPedido(input: {
   unidades: UnidadePedido[]
   pousadaId: string
   pousada: string
+  /** Data de entrega (yyyy-mm-dd) — padrão amanhã, que é quando a cesta normalmente é servida. */
+  dataPedido?: string
 }) {
   const totalUnidades = input.unidades.length
   const totalItens = input.unidades.reduce((acc, u) => acc + contarItens(u.itens), 0)
@@ -25,6 +27,7 @@ export async function salvarPedido(input: {
     total_unidades: totalUnidades,
     total_itens: totalItens,
     total_pessoas: totalPessoas,
+    data_pedido: input.dataPedido ?? amanhaISO(),
   })
 
   if (error) throw error
@@ -62,13 +65,13 @@ export async function getMeusPedidos(pousadaId: string): Promise<Pedido[]> {
     .from("pedidos")
     .select(COLUNAS)
     .eq("pousada_id", pousadaId)
-    .order("created_at", { ascending: false })
+    .order("data_pedido", { ascending: false })
     .limit(30)
   if (error) throw error
   return (data ?? []) as unknown as Pedido[]
 }
 
-/** Edita um pedido próprio (a pousada só edita o que é dela e enquanto estiver ativo — garantido pelo RLS). */
+/** Edita um pedido próprio (a pousada só edita o que é dela, enquanto ativo e antes da data de entrega — garantido pelo RLS). */
 export async function editarPedidoPousada(input: { id: number; saudacao: string; unidades: unknown }): Promise<Pedido> {
   const unidades = validarUnidades(input.unidades)
   const totais = calcularTotais(unidades)
@@ -84,7 +87,7 @@ export async function editarPedidoPousada(input: { id: number; saudacao: string;
     .maybeSingle()
 
   if (error) throw new Error(error.message)
-  if (!data) throw new Error("Não foi possível atualizar o pedido.")
+  if (!data) throw new Error("Não foi possível editar: o prazo para alterar esse pedido já passou.")
   return data as unknown as Pedido
 }
 
@@ -101,6 +104,6 @@ export async function cancelarPedidoPousada(input: { id: number; motivo?: string
     .maybeSingle()
 
   if (error) throw new Error(error.message)
-  if (!data) throw new Error("Não foi possível cancelar o pedido.")
+  if (!data) throw new Error("Não foi possível cancelar: o prazo para cancelar esse pedido já passou.")
   return data as unknown as Pedido
 }
