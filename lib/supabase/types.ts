@@ -108,8 +108,24 @@ export type Database = {
         Relationships: []
       }
       feedbacks: {
-        Row: { id: number; pedido_id: number | null; nota: number; comentario: string | null; created_at: string }
-        Insert: { id?: number; pedido_id?: number | null; nota: number; comentario?: string | null; created_at?: string }
+        Row: {
+          id: number
+          pedido_id: number | null
+          nome: string
+          whatsapp: string | null
+          nota: number | null
+          comentario: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: number
+          pedido_id?: number | null
+          nome: string
+          whatsapp?: string | null
+          nota?: number | null
+          comentario?: string | null
+          created_at?: string
+        }
         Update: Partial<Database["public"]["Tables"]["feedbacks"]["Insert"]>
         Relationships: []
       }

@@ -75,6 +75,16 @@ export type Pedido = {
   feedback_token?: string
 }
 
+export type Feedback = {
+  id: number
+  pedido_id: number | null
+  nome: string
+  whatsapp: string | null
+  comentario: string | null
+  created_at: string
+  pedido?: { id: number; pousada?: string | null; saudacao?: string | null; data_pedido?: string | null } | null
+}
+
 function formatarSaudacao(d: Date): string {
   const semana = d.toLocaleDateString("pt-BR", { weekday: "long" })
   const dia = String(d.getDate()).padStart(2, "0")

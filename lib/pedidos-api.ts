@@ -1,5 +1,5 @@
 import { supabase } from "@/lib/supabase/client"
-import { amanhaISO, contarItens, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { amanhaISO, contarItens, type Feedback, type Pedido, type UnidadePedido } from "@/lib/pedidos"
 import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 
 const COLUNAS =
@@ -106,4 +106,14 @@ export async function cancelarPedidoPousada(input: { id: number; motivo?: string
   if (error) throw new Error(error.message)
   if (!data) throw new Error("Não foi possível cancelar: o prazo para cancelar esse pedido já passou.")
   return data as unknown as Pedido
+}
+
+/** Feedbacks recebidos (RLS: admins veem todos, pousada só os dos próprios pedidos). */
+export async function getFeedbacks(): Promise<Feedback[]> {
+  const { data, error } = await supabase
+    .from("feedbacks")
+    .select("id, pedido_id, nome, whatsapp, comentario, created_at, pedido:pedidos(id, pousada, saudacao, data_pedido)")
+    .order("created_at", { ascending: false })
+  if (error) throw error
+  return (data ?? []) as unknown as Feedback[]
 }

@@ -1,11 +1,12 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { UnidadeCard } from "@/components/unidade-card"
 import { MeusPedidos } from "@/components/meus-pedidos"
+import { FeedbacksLista } from "@/components/feedbacks-lista"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
@@ -51,7 +52,7 @@ export function copiarFallback(texto: string): boolean {
 }
 
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
-  const [aba, setAba] = useState<"novo" | "meus">("novo")
+  const [aba, setAba] = useState<"novo" | "meus" | "feedbacks">("novo")
   const [saudacao, setSaudacao] = useState(dataSaudacaoPara(amanhaISO()))
   const [saudacaoEditada, setSaudacaoEditada] = useState(false)
   const [dataPedido, setDataPedido] = useState(amanhaISO())
@@ -160,10 +161,17 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
           )}
         </div>
         <div className="mx-auto max-w-5xl px-4 pb-4">
-          <div className="relative grid grid-cols-2 rounded-xl bg-muted p-1">
+          <div className="relative grid grid-cols-3 rounded-xl bg-muted p-1">
             <span
-              className="absolute inset-y-1 w-[calc(50%-4px)] rounded-lg bg-primary shadow-sm transition-transform duration-300 ease-out"
-              style={{ transform: aba === "meus" ? "translateX(calc(100% + 8px))" : "translateX(0)" }}
+              className="absolute inset-y-1 w-[calc(33.333%-5.5px)] rounded-lg bg-primary shadow-sm transition-transform duration-300 ease-out"
+              style={{
+                transform:
+                  aba === "meus"
+                    ? "translateX(calc(100% + 8px))"
+                    : aba === "feedbacks"
+                      ? "translateX(calc(200% + 16px))"
+                      : "translateX(0)",
+              }}
               aria-hidden="true"
             />
             <button
@@ -187,6 +195,17 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
               <ListChecks className="size-3.5" aria-hidden="true" />
               Meus pedidos
             </button>
+            <button
+              type="button"
+              onClick={() => setAba("feedbacks")}
+              className={cn(
+                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
+                aba === "feedbacks" ? "text-primary-foreground" : "text-muted-foreground",
+              )}
+            >
+              <MessageSquareHeart className="size-3.5" aria-hidden="true" />
+              Feedbacks
+            </button>
           </div>
         </div>
       </header>
@@ -194,6 +213,10 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       {aba === "meus" ? (
         <main className="mx-auto max-w-5xl px-4 py-6">
           <MeusPedidos pousada={pousada} />
+        </main>
+      ) : aba === "feedbacks" ? (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <FeedbacksLista />
         </main>
       ) : (
         <>

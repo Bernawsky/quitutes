@@ -15,6 +15,7 @@ const ABAS = [
   { href: "/metricas", label: "Visão geral" },
   { href: "/metricas/pedidos", label: "Pedidos" },
   { href: "/metricas/historico", label: "Histórico" },
+  { href: "/metricas/feedbacks", label: "Feedbacks" },
 ]
 
 export function MetricasShell({ children }: { children: React.ReactNode }) {

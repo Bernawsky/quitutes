@@ -6,13 +6,13 @@ const TOKEN_RE = /^[0-9a-f-]{36}$/i
 export async function POST(request: Request) {
   const body = await request.json().catch(() => null)
   const token = typeof body?.token === "string" ? body.token : ""
-  const nota = Number(body?.nota)
-  const comentario = typeof body?.comentario === "string" ? body.comentario.trim().slice(0, 500) : null
+  const nome = typeof body?.nome === "string" ? body.nome.trim().slice(0, 120) : ""
+  const whatsapp = typeof body?.whatsapp === "string" ? body.whatsapp.trim().slice(0, 30) : ""
+  const comentario = typeof body?.comentario === "string" ? body.comentario.trim().slice(0, 500) : ""
 
   if (!TOKEN_RE.test(token)) return NextResponse.json({ error: "Link inválido." }, { status: 400 })
-  if (!Number.isInteger(nota) || nota < 1 || nota > 5) {
-    return NextResponse.json({ error: "Escolha uma nota de 1 a 5." }, { status: 400 })
-  }
+  if (!nome) return NextResponse.json({ error: "Informe seu nome." }, { status: 400 })
+  if (!comentario) return NextResponse.json({ error: "Escreva seu feedback." }, { status: 400 })
 
   const admin = createAdminSupabaseClient()
 
@@ -26,7 +26,7 @@ export async function POST(request: Request) {
 
   const { error: erroInsert } = await admin
     .from("feedbacks")
-    .insert({ pedido_id: pedido.id, nota, comentario: comentario || null })
+    .insert({ pedido_id: pedido.id, nome, whatsapp: whatsapp || null, comentario })
 
   if (erroInsert) {
     if (erroInsert.code === "23505") {

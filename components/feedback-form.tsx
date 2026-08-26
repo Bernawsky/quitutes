@@ -1,21 +1,24 @@
 "use client"
 
 import { useState } from "react"
-import { Star, ShoppingBasket, Check } from "lucide-react"
+import { Send, Check } from "lucide-react"
 import { toast } from "sonner"
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 export function FeedbackForm({ token, jaAvaliado }: { token: string; jaAvaliado: boolean }) {
-  const [nota, setNota] = useState(0)
-  const [hover, setHover] = useState(0)
+  const [nome, setNome] = useState("")
+  const [whatsapp, setWhatsapp] = useState("")
   const [comentario, setComentario] = useState("")
   const [enviando, setEnviando] = useState(false)
   const [enviado, setEnviado] = useState(jaAvaliado)
 
   const enviar = async () => {
-    if (nota < 1) {
-      toast.error("Escolha uma nota de 1 a 5 estrelas")
+    if (!nome.trim()) {
+      toast.error("Informe seu nome")
+      return
+    }
+    if (!comentario.trim()) {
+      toast.error("Escreva seu feedback")
       return
     }
     setEnviando(true)
@@ -23,13 +26,13 @@ export function FeedbackForm({ token, jaAvaliado }: { token: string; jaAvaliado:
       const res = await fetch("/api/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, nota, comentario: comentario.trim() }),
+        body: JSON.stringify({ token, nome: nome.trim(), whatsapp: whatsapp.trim(), comentario: comentario.trim() }),
       })
       const dados = await res.json().catch(() => ({}))
-      if (!res.ok) throw new Error(dados?.error || "Não foi possível enviar sua avaliação.")
+      if (!res.ok) throw new Error(dados?.error || "Não foi possível enviar seu feedback.")
       setEnviado(true)
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Não foi possível enviar sua avaliação.")
+      toast.error(e instanceof Error ? e.message : "Não foi possível enviar seu feedback.")
     } finally {
       setEnviando(false)
     }
@@ -41,40 +44,38 @@ export function FeedbackForm({ token, jaAvaliado }: { token: string; jaAvaliado:
         <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Check className="size-7" aria-hidden="true" />
         </span>
-        <p className="font-heading text-lg font-semibold text-card-foreground">Obrigado pela avaliação!</p>
-        <p className="text-sm text-muted-foreground">Seu feedback ajuda a melhorar o café da manhã.</p>
+        <p className="font-heading text-lg font-semibold text-card-foreground">Obrigado pelo feedback!</p>
+        <p className="text-sm text-muted-foreground">Sua opinião ajuda a melhorar o café da manhã.</p>
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="flex flex-col items-center gap-2">
-        <div className="flex gap-1.5">
-          {[1, 2, 3, 4, 5].map((n) => (
-            <button
-              key={n}
-              type="button"
-              onClick={() => setNota(n)}
-              onMouseEnter={() => setHover(n)}
-              onMouseLeave={() => setHover(0)}
-              className="tap p-1"
-              aria-label={`${n} estrela${n > 1 ? "s" : ""}`}
-            >
-              <Star
-                className={cn(
-                  "size-9 transition-colors",
-                  (hover || nota) >= n ? "fill-primary text-primary" : "fill-muted text-muted-foreground/40",
-                )}
-              />
-            </button>
-          ))}
-        </div>
-        <p className="text-xs text-muted-foreground">Toque nas estrelas para avaliar</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground">Nome</span>
+        <input
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value.slice(0, 120))}
+          placeholder="Seu nome"
+          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+        />
+      </label>
 
       <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Comentário (opcional)</span>
+        <span className="text-xs font-medium text-muted-foreground">WhatsApp (opcional)</span>
+        <input
+          type="tel"
+          value={whatsapp}
+          onChange={(e) => setWhatsapp(e.target.value.slice(0, 30))}
+          placeholder="(00) 00000-0000"
+          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+        />
+      </label>
+
+      <label className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-muted-foreground">Feedback</span>
         <textarea
           value={comentario}
           onChange={(e) => setComentario(e.target.value.slice(0, 500))}
@@ -85,8 +86,8 @@ export function FeedbackForm({ token, jaAvaliado }: { token: string; jaAvaliado:
       </label>
 
       <Button onClick={enviar} disabled={enviando} className="tap min-h-11 gap-2">
-        <ShoppingBasket className="size-4" aria-hidden="true" />
-        {enviando ? "Enviando..." : "Enviar avaliação"}
+        <Send className="size-4" aria-hidden="true" />
+        {enviando ? "Enviando..." : "Enviar feedback"}
       </Button>
     </div>
   )
