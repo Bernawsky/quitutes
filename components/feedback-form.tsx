@@ -1,8 +1,10 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { Send, Check } from "lucide-react"
+import type { ReactNode } from "react"
+import { Send, Check, MapPin, DoorOpen, User, Phone, MessageSquareText, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
+import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 
 type PousadaOpcao = { id: string; nome: string; unidades: { nome: string }[] }
@@ -13,6 +15,59 @@ type Props = {
   | { token: string; pousadaNome: string; unidadesFixas: string[] }
   | { token?: undefined; pousadaNome?: undefined; unidadesFixas?: undefined }
 )
+
+const CAMPO =
+  "w-full rounded-xl border border-input bg-background py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+
+function Campo({ label, icon, children }: { label: string; icon: ReactNode; children: ReactNode }) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+        {icon}
+        {label}
+      </span>
+      {children}
+    </label>
+  )
+}
+
+function Select({
+  value,
+  onChange,
+  disabled,
+  placeholder,
+  opcoes,
+}: {
+  value: string
+  onChange: (v: string) => void
+  disabled?: boolean
+  placeholder: string
+  opcoes: { value: string; label: string }[]
+}) {
+  return (
+    <div className="relative">
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        disabled={disabled}
+        className={cn(CAMPO, "appearance-none pl-3 pr-9 disabled:cursor-not-allowed disabled:opacity-50", !value && "text-muted-foreground/60")}
+      >
+        <option value="" disabled hidden>
+          {placeholder}
+        </option>
+        {opcoes.map((o) => (
+          <option key={o.value} value={o.value} className="text-foreground">
+            {o.label}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+    </div>
+  )
+}
 
 export function FeedbackForm(props: Props) {
   const { jaAvaliado, token, pousadaNome, unidadesFixas } = props
@@ -81,7 +136,7 @@ export function FeedbackForm(props: Props) {
 
   if (enviado) {
     return (
-      <div className="flex flex-col items-center gap-3 py-6 text-center">
+      <div className="pop-in flex flex-col items-center gap-3 py-6 text-center">
         <span className="flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary">
           <Check className="size-7" aria-hidden="true" />
         </span>
@@ -94,82 +149,64 @@ export function FeedbackForm(props: Props) {
   return (
     <div className="flex flex-col gap-4">
       {token ? (
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Pousada</span>
-          <p className="rounded-lg border border-input bg-muted px-3 py-2 text-sm text-foreground">{pousadaNome}</p>
-        </div>
+        <Campo label="Pousada" icon={<MapPin className="size-3.5" aria-hidden="true" />}>
+          <p className={cn(CAMPO, "flex items-center bg-muted px-3 text-muted-foreground")}>{pousadaNome}</p>
+        </Campo>
       ) : (
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-muted-foreground">Pousada</span>
-          <select
+        <Campo label="Pousada" icon={<MapPin className="size-3.5" aria-hidden="true" />}>
+          <Select
             value={pousadaId}
-            onChange={(e) => {
-              setPousadaId(e.target.value)
+            onChange={(v) => {
+              setPousadaId(v)
               setUnidade("")
             }}
-            className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30"
-          >
-            <option value="">Selecione...</option>
-            {pousadas.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.nome}
-              </option>
-            ))}
-          </select>
-        </label>
+            placeholder="Selecione a pousada"
+            opcoes={pousadas.map((p) => ({ value: p.id, label: p.nome }))}
+          />
+        </Campo>
       )}
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Quarto / Chalé</span>
-        <select
+      <Campo label="Quarto / Chalé" icon={<DoorOpen className="size-3.5" aria-hidden="true" />}>
+        <Select
           value={unidade}
-          onChange={(e) => setUnidade(e.target.value)}
+          onChange={setUnidade}
           disabled={!token && !pousadaId}
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30 disabled:opacity-50"
-        >
-          <option value="">Selecione...</option>
-          {unidadesDisponiveis.map((u) => (
-            <option key={u} value={u}>
-              {u}
-            </option>
-          ))}
-        </select>
-      </label>
+          placeholder="Selecione o quarto/chalé"
+          opcoes={unidadesDisponiveis.map((u) => ({ value: u, label: u }))}
+        />
+      </Campo>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Nome</span>
+      <Campo label="Nome" icon={<User className="size-3.5" aria-hidden="true" />}>
         <input
           type="text"
           value={nome}
           onChange={(e) => setNome(e.target.value.slice(0, 120))}
           placeholder="Seu nome"
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className={cn(CAMPO, "px-3")}
         />
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted-foreground">WhatsApp (opcional)</span>
+      <Campo label="WhatsApp (opcional)" icon={<Phone className="size-3.5" aria-hidden="true" />}>
         <input
           type="tel"
           value={whatsapp}
           onChange={(e) => setWhatsapp(e.target.value.slice(0, 30))}
           placeholder="(00) 00000-0000"
-          className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className={cn(CAMPO, "px-3")}
         />
-      </label>
+      </Campo>
 
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-muted-foreground">Feedback</span>
+      <Campo label="Feedback" icon={<MessageSquareText className="size-3.5" aria-hidden="true" />}>
         <textarea
           value={comentario}
           onChange={(e) => setComentario(e.target.value.slice(0, 500))}
           placeholder="Conte como foi a cesta que você recebeu..."
           rows={4}
-          className="w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-ring focus:ring-2 focus:ring-ring/30"
+          className={cn(CAMPO, "resize-none px-3 py-2.5")}
         />
-      </label>
+      </Campo>
 
-      <Button onClick={enviar} disabled={enviando} className="tap min-h-11 gap-2">
+      <Button onClick={enviar} disabled={enviando} className="tap mt-1 min-h-11 gap-2">
         <Send className="size-4" aria-hidden="true" />
         {enviando ? "Enviando..." : "Enviar feedback"}
       </Button>

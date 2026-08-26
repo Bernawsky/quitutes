@@ -205,6 +205,9 @@
   .pop-in {
     animation: pop-in 0.18s ease-out;
   }
+  .animate-feedback-in {
+    animation: feedback-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
 }
 
 @keyframes pop-in {
@@ -213,6 +216,23 @@
   }
   100% {
     transform: scale(1);
+  }
+}
+
+@keyframes feedback-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-feedback-in {
+    animation: none;
   }
 }
 
