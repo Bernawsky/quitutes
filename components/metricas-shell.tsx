@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { ArrowLeft, Settings, LogOut, X, AlertTriangle } from "lucide-react"
@@ -28,7 +28,28 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
   const { periodo, setPeriodo, pousadasSelecionadas, togglePousada, limparPousadas } = useFiltrosMetricas()
   const { pousadas, pendencias } = useDadosMetricas()
   const [pendenciasFechadas, setPendenciasFechadas] = useState(false)
+  const navRef = useRef<HTMLElement>(null)
+  const tabRefs = useRef<(HTMLAnchorElement | null)[]>([])
+  const [pilula, setPilula] = useState<{ left: number; width: number } | null>(null)
   useRealtimePedidos()
+
+  const indiceAtivo = ABAS.findIndex((a) => a.href === pathname)
+
+  useLayoutEffect(() => {
+    const ativo = tabRefs.current[indiceAtivo]
+    if (!ativo) return
+    setPilula({ left: ativo.offsetLeft, width: ativo.offsetWidth })
+    ativo.scrollIntoView({ behavior: "smooth", inline: "nearest", block: "nearest" })
+  }, [indiceAtivo])
+
+  useEffect(() => {
+    const recalcular = () => {
+      const ativo = tabRefs.current[indiceAtivo]
+      if (ativo) setPilula({ left: ativo.offsetLeft, width: ativo.offsetWidth })
+    }
+    window.addEventListener("resize", recalcular)
+    return () => window.removeEventListener("resize", recalcular)
+  }, [indiceAtivo])
 
   const chavePendencias = pendencias.map((p) => p.id).join(",")
   useEffect(() => setPendenciasFechadas(false), [chavePendencias])
@@ -69,23 +90,39 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
         </div>
 
         <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-2 px-4 pb-3">
-          <nav className="flex gap-1 rounded-lg bg-muted p-1 overflow-x-auto">
-            {ABAS.map((aba) => {
-              const ativa = pathname === aba.href
-              return (
-                <Link
-                  key={aba.href}
-                  href={aba.href}
-                  className={
-                    "tap rounded-md px-3 py-1.5 text-sm font-medium transition-colors " +
-                    (ativa ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")
-                  }
-                >
-                  {aba.label}
-                </Link>
-              )
-            })}
-          </nav>
+          <div className="relative min-w-0 flex-1">
+            <nav ref={navRef} className="relative flex gap-1 overflow-x-auto rounded-lg bg-muted p-1 scroll-smooth">
+              {pilula && (
+                <span
+                  className="absolute top-1 bottom-1 left-0 rounded-md bg-primary transition-[transform,width] duration-300 ease-out"
+                  style={{ width: pilula.width, transform: `translateX(${pilula.left}px)` }}
+                  aria-hidden="true"
+                />
+              )}
+              {ABAS.map((aba, i) => {
+                const ativa = pathname === aba.href
+                return (
+                  <Link
+                    key={aba.href}
+                    href={aba.href}
+                    ref={(el) => {
+                      tabRefs.current[i] = el
+                    }}
+                    className={
+                      "tap relative z-10 shrink-0 rounded-md px-3 py-1.5 text-sm font-medium transition-colors " +
+                      (ativa ? "text-primary-foreground" : "text-muted-foreground hover:text-foreground")
+                    }
+                  >
+                    {aba.label}
+                  </Link>
+                )
+              })}
+            </nav>
+            <span
+              className="pointer-events-none absolute inset-y-0 right-0 w-6 rounded-r-lg bg-gradient-to-l from-muted to-transparent"
+              aria-hidden="true"
+            />
+          </div>
           <div className="ml-auto">
             <FiltroMetricas
               periodo={periodo}
