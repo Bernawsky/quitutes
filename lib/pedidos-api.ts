@@ -3,7 +3,7 @@ import { amanhaISO, contarItens, type Pedido, type UnidadePedido } from "@/lib/p
 import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 
 const COLUNAS =
-  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido"
+  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token"
 
 export async function salvarPedido(input: {
   titulo: string

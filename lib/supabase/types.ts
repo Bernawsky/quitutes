@@ -21,6 +21,7 @@ export type Database = {
           updated_at: string
           atualizado_por: string | null
           data_pedido: string
+          feedback_token: string
         }
         Insert: {
           id?: number
@@ -39,6 +40,7 @@ export type Database = {
           updated_at?: string
           atualizado_por?: string | null
           data_pedido?: string
+          feedback_token?: string
         }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
         Relationships: []
@@ -103,6 +105,12 @@ export type Database = {
         Row: { id: string; user_id: string; role: string; created_at: string }
         Insert: { id?: string; user_id: string; role: string; created_at?: string }
         Update: Partial<Database["public"]["Tables"]["user_roles"]["Insert"]>
+        Relationships: []
+      }
+      feedbacks: {
+        Row: { id: number; pedido_id: number | null; nota: number; comentario: string | null; created_at: string }
+        Insert: { id?: number; pedido_id?: number | null; nota: number; comentario?: string | null; created_at?: string }
+        Update: Partial<Database["public"]["Tables"]["feedbacks"]["Insert"]>
         Relationships: []
       }
       metricas_exportadas: {

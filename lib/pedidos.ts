@@ -72,6 +72,7 @@ export type Pedido = {
   cancelado_at?: string | null
   updated_at?: string
   data_pedido: string
+  feedback_token?: string
 }
 
 function formatarSaudacao(d: Date): string {

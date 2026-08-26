@@ -2,13 +2,24 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { Clock, Pencil, Ban, ShoppingBasket, CalendarDays, Lock } from "lucide-react"
+import { toast } from "sonner"
+import { Clock, Pencil, Ban, ShoppingBasket, CalendarDays, Lock, Star } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getMeusPedidos } from "@/lib/pedidos-api"
 import { normalizarHorario, observacoesUnidade, podeEditarPedido, rotuloData, type Pedido } from "@/lib/pedidos"
 import { EditarPedidoDialog } from "@/components/editar-pedido-dialog"
 import { CancelarPedidoDialog } from "@/components/cancelar-pedido-dialog"
+import { copiarTexto } from "@/components/reservas-app"
 import type { Pousada } from "@/lib/pousadas"
+
+function copiarLinkFeedback(token: string) {
+  const url = `${window.location.origin}/feedback/${token}`
+  if (copiarTexto(url)) {
+    toast.success("Link copiado", { description: "Envie para o hóspede avaliar a cesta." })
+  } else {
+    toast.error("Não foi possível copiar o link")
+  }
+}
 
 export function MeusPedidos({ pousada }: { pousada: Pousada }) {
   const { data: pedidos = [], isLoading, mutate } = useSWR<Pedido[]>(["meus-pedidos", pousada.id], () => getMeusPedidos(pousada.id))
@@ -84,6 +95,17 @@ export function MeusPedidos({ pousada }: { pousada: Pousada }) {
               })}
             </ul>
             {cancelado && p.motivo_cancelamento && <p className="mt-2 text-xs font-medium text-destructive">Motivo: {p.motivo_cancelamento}</p>}
+            {!cancelado && p.feedback_token && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="tap mt-2 gap-1.5 text-xs text-muted-foreground"
+                onClick={() => copiarLinkFeedback(p.feedback_token!)}
+              >
+                <Star className="size-3.5" aria-hidden="true" />
+                Copiar link de avaliação
+              </Button>
+            )}
           </div>
         )
       })}
