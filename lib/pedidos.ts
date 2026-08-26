@@ -78,11 +78,14 @@ export type Pedido = {
 export type Feedback = {
   id: number
   pedido_id: number | null
+  pousada_id: string | null
+  unidade: string | null
   nome: string
   whatsapp: string | null
   comentario: string | null
   created_at: string
   pedido?: { id: number; pousada?: string | null; saudacao?: string | null; data_pedido?: string | null } | null
+  pousada?: { id: string; nome: string } | null
 }
 
 function formatarSaudacao(d: Date): string {

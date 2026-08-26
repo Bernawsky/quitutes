@@ -112,7 +112,9 @@ export async function cancelarPedidoPousada(input: { id: number; motivo?: string
 export async function getFeedbacks(): Promise<Feedback[]> {
   const { data, error } = await supabase
     .from("feedbacks")
-    .select("id, pedido_id, nome, whatsapp, comentario, created_at, pedido:pedidos(id, pousada, saudacao, data_pedido)")
+    .select(
+      "id, pedido_id, pousada_id, unidade, nome, whatsapp, comentario, created_at, pedido:pedidos(id, pousada, saudacao, data_pedido), pousada:pousadas(id, nome)",
+    )
     .order("created_at", { ascending: false })
   if (error) throw error
   return (data ?? []) as unknown as Feedback[]

@@ -26,13 +26,16 @@ export function FeedbacksLista({ mostrarPousada = false }: { mostrarPousada?: bo
 
   return (
     <ul className="flex flex-col gap-3">
-      {feedbacks.map((f) => (
+      {feedbacks.map((f) => {
+        const nomePousada = f.pousada?.nome ?? f.pedido?.pousada
+        return (
         <li key={f.id} className="rounded-2xl border border-border bg-card p-4">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
               <p className="text-sm font-semibold text-card-foreground">{f.nome}</p>
               <p className="text-xs text-muted-foreground">
-                {mostrarPousada && f.pedido?.pousada ? `${f.pedido.pousada} • ` : ""}
+                {mostrarPousada && nomePousada ? `${nomePousada} • ` : ""}
+                {f.unidade ? `${f.unidade} • ` : ""}
                 {f.pedido?.data_pedido ? `Café de ${rotuloData(f.pedido.data_pedido)} • ` : ""}
                 {new Date(f.created_at).toLocaleString("pt-BR")}
               </p>
@@ -51,7 +54,8 @@ export function FeedbacksLista({ mostrarPousada = false }: { mostrarPousada?: bo
           </div>
           {f.comentario && <p className="mt-2 text-sm text-foreground">{f.comentario}</p>}
         </li>
-      ))}
+        )
+      })}
     </ul>
   )
 }

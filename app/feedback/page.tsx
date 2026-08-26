@@ -1,25 +1,9 @@
-import { notFound } from "next/navigation"
 import { MessageSquareHeart } from "lucide-react"
-import { createAdminSupabaseClient } from "@/lib/supabase/admin"
 import { FeedbackForm } from "@/components/feedback-form"
 
 export const dynamic = "force-dynamic"
 
-export default async function FeedbackPage({ params }: { params: Promise<{ token: string }> }) {
-  const { token } = await params
-  const admin = createAdminSupabaseClient()
-
-  const { data: pedido } = await admin
-    .from("pedidos")
-    .select("id, pousada, unidades")
-    .eq("feedback_token", token)
-    .maybeSingle()
-
-  if (!pedido) notFound()
-
-  const { data: feedback } = await admin.from("feedbacks").select("id").eq("pedido_id", pedido.id).maybeSingle()
-  const unidadesFixas = ((pedido.unidades as { unidade: string }[] | null) ?? []).map((u) => u.unidade)
-
+export default function FeedbackGenericoPage() {
   return (
     <div className="flex min-h-svh items-center justify-center bg-background px-4 py-10">
       <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6">
@@ -30,12 +14,7 @@ export default async function FeedbackPage({ params }: { params: Promise<{ token
           <h1 className="font-heading text-lg font-bold text-balance text-card-foreground">Dê seu feedback</h1>
           <p className="text-sm text-muted-foreground">Conte pra gente como foi a cesta de café da manhã.</p>
         </div>
-        <FeedbackForm
-          token={token}
-          pousadaNome={pedido.pousada ?? "Vale do Sol"}
-          unidadesFixas={unidadesFixas}
-          jaAvaliado={!!feedback}
-        />
+        <FeedbackForm jaAvaliado={false} />
       </div>
     </div>
   )

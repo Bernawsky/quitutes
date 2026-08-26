@@ -111,6 +111,8 @@ export type Database = {
         Row: {
           id: number
           pedido_id: number | null
+          pousada_id: string | null
+          unidade: string | null
           nome: string
           whatsapp: string | null
           nota: number | null
@@ -120,6 +122,8 @@ export type Database = {
         Insert: {
           id?: number
           pedido_id?: number | null
+          pousada_id?: string | null
+          unidade?: string | null
           nome: string
           whatsapp?: string | null
           nota?: number | null
