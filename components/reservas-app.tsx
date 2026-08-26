@@ -14,7 +14,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendario } from "@/components/calendario"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
 import { dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData, type Pedido } from "@/lib/pedidos"
-import { salvarPedido, getMeusPedidos } from "@/lib/pedidos-api"
+import { salvarPedido, getMeusPedidos, notificarEvento } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
 /**
@@ -133,9 +133,10 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       pousada: pousada.nome,
       dataPedido,
     })
-      .then(() => {
+      .then((pedidoId) => {
         setCopiado(true)
         toast.success("Pedido enviado", { description: "Registrado no sistema." })
+        void notificarEvento("novo_pedido", pedidoId)
       })
       .catch(() => {
         toast.error("Não foi possível registrar o pedido")

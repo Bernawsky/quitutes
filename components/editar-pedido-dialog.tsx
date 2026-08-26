@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { UnidadeCard } from "@/components/unidade-card"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
-import { editarPedidoPousada } from "@/lib/pedidos-api"
+import { editarPedidoPousada, notificarEvento } from "@/lib/pedidos-api"
 import type { Pedido } from "@/lib/pedidos"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -48,6 +48,7 @@ export function EditarPedidoDialog({
         onSalvo()
         toast.success("Pedido atualizado", { description: "Registrado no sistema." })
         onClose()
+        void notificarEvento("edicao", pedido.id)
       } catch (e) {
         toast.error("Não foi possível salvar", { description: e instanceof Error ? e.message : undefined })
       }

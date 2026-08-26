@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
+import { AvisosBell } from "@/components/avisos-bell"
 import { getPedidosPorData, getDatasComPedidosCesta } from "@/lib/pedidos-api"
 import { HORARIOS, normalizarHorario, decomporCestas, somarCestas, rotuloData, amanhaISO, type ContagemCestas } from "@/lib/pedidos"
 
@@ -85,6 +86,7 @@ export function LeitorCozinha() {
             <h1 className="font-heading text-xl font-bold text-card-foreground">Lista de preparo</h1>
             <p className="text-sm text-muted-foreground">O que precisa estar pronto para o café da manhã</p>
           </div>
+          <AvisosBell />
           <Popover>
             <PopoverTrigger
               render={

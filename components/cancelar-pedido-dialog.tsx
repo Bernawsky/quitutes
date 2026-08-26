@@ -5,7 +5,7 @@ import { toast } from "sonner"
 import { Ban } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { cancelarPedidoPousada } from "@/lib/pedidos-api"
+import { cancelarPedidoPousada, notificarEvento } from "@/lib/pedidos-api"
 import type { Pedido } from "@/lib/pedidos"
 
 export function CancelarPedidoDialog({
@@ -25,12 +25,7 @@ export function CancelarPedidoDialog({
       try {
         await cancelarPedidoPousada({ id: pedido.id, motivo: motivo.trim() })
         onCancelado()
-        // Avisa os admins por WhatsApp (best-effort: não bloqueia o fluxo se falhar).
-        void fetch("/api/notificar/cancelamento", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pedidoId: pedido.id }),
-        }).catch(() => {})
+        void notificarEvento("cancelamento", pedido.id)
         toast.success("Pedido cancelado", { description: "Registrado no sistema." })
         onClose()
       } catch (e) {

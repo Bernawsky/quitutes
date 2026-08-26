@@ -9,7 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendario } from "@/components/calendario"
 import { VoucherBuffet } from "@/components/voucher-buffet"
 import { getBuffetAtivo } from "@/app/actions/buffet"
-import { salvarPedidoBuffet, getPedidosBuffet } from "@/lib/pedidos-api"
+import { salvarPedidoBuffet, getPedidosBuffet, notificarEvento } from "@/lib/pedidos-api"
 import { hojeISO, rotuloData } from "@/lib/pedidos"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -37,7 +37,7 @@ export function BuffetForm({ pousada }: { pousada: Pousada }) {
     }
     setEnviando(true)
     try {
-      await salvarPedidoBuffet({
+      const pedidoId = await salvarPedidoBuffet({
         pousadaId: pousada.id,
         pousada: pousada.nome,
         pessoas,
@@ -46,6 +46,7 @@ export function BuffetForm({ pousada }: { pousada: Pousada }) {
       })
       setVoucherGerado({ pessoas, hospede: hospede.trim(), data })
       toast.success("Voucher gerado", { description: "Os administradores já podem ver na aba Buffet." })
+      void notificarEvento("buffet_novo", pedidoId)
     } catch (e) {
       toast.error("Não foi possível gerar o voucher", { description: e instanceof Error ? e.message : undefined })
     } finally {

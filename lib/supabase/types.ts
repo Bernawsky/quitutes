@@ -143,6 +143,32 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["configuracoes"]["Insert"]>
         Relationships: []
       }
+      push_subscriptions: {
+        Row: { id: string; user_id: string; endpoint: string; p256dh: string; auth: string; criado_em: string }
+        Insert: { id?: string; user_id: string; endpoint: string; p256dh: string; auth: string; criado_em?: string }
+        Update: Partial<Database["public"]["Tables"]["push_subscriptions"]["Insert"]>
+        Relationships: []
+      }
+      eventos: {
+        Row: {
+          id: number
+          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
+          pedido_id: number | null
+          pousada: string | null
+          mensagem: string
+          criado_em: string
+        }
+        Insert: {
+          id?: number
+          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
+          pedido_id?: number | null
+          pousada?: string | null
+          mensagem: string
+          criado_em?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["eventos"]["Insert"]>
+        Relationships: []
+      }
       metricas_exportadas: {
         Row: {
           id: number

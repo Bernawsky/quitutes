@@ -15,7 +15,7 @@ export const LABEL_PERIODO: Record<Periodo, string> = {
   ano: "neste ano",
 }
 
-function dentroDoPeriodo(data: Date, periodo: Periodo): boolean {
+export function dentroDoPeriodo(data: Date, periodo: Periodo): boolean {
   const agora = new Date()
   switch (periodo) {
     case "dia":

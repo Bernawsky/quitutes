@@ -7,6 +7,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, type ChartConfig } f
 import { Button } from "@/components/ui/button"
 import { ExportarDialog } from "@/components/exportar-dialog"
 import { RankingMetricas } from "@/components/ranking-metricas"
+import { CalendarioHeatmap } from "@/components/calendario-heatmap"
 import { AoEntrar } from "@/components/ao-entrar"
 import { useDadosMetricas, delta, LABEL_PERIODO } from "@/hooks/use-dados-metricas"
 
@@ -57,7 +58,8 @@ function StatCard({
 
 export function VisaoGeralMetricas() {
   const [exportando, setExportando] = useState(false)
-  const { periodo, filtrados, totais, totaisAnteriores, serie, porUnidade, porPousada, isLoading } = useDadosMetricas()
+  const { periodo, pousadasSelecionadas, pedidos, filtrados, totais, totaisAnteriores, serie, porUnidade, porPousada, isLoading } =
+    useDadosMetricas()
 
   const rankingUnidade = porUnidade.map((i) => ({ rotulo: i.unidade, valor: i.total }))
   const rankingPousada = porPousada.map((i) => ({ rotulo: i.nome, valor: i.pedidos, sub: `${i.pessoas}p` }))
@@ -118,6 +120,8 @@ export function VisaoGeralMetricas() {
           <RankingMetricas porUnidade={rankingUnidade} porPousada={rankingPousada} />
         </AoEntrar>
       )}
+
+      <CalendarioHeatmap pedidos={pedidos} pousadasSelecionadas={pousadasSelecionadas} />
 
       <ExportarDialog
         aberto={exportando}

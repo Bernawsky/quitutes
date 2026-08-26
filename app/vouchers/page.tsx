@@ -2,6 +2,7 @@ import type { Metadata } from "next"
 import { UtensilsCrossed } from "lucide-react"
 import { exigirEquipeServer } from "@/lib/supabase/server"
 import { ListaVouchersBuffet } from "@/components/lista-vouchers-buffet"
+import { AvisosBell } from "@/components/avisos-bell"
 
 export const dynamic = "force-dynamic"
 
@@ -20,10 +21,11 @@ export default async function VouchersPage() {
           <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <UtensilsCrossed className="size-5" aria-hidden="true" />
           </span>
-          <div>
+          <div className="mr-auto">
             <h1 className="font-heading text-xl font-bold text-card-foreground">Vouchers do Buffet</h1>
             <p className="text-sm text-muted-foreground">Hóspedes que as pousadas enviaram para o café da cafeteria</p>
           </div>
+          <AvisosBell />
         </div>
       </header>
 

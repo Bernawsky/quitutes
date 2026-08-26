@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { ArrowLeft, Settings, LogOut, X, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FiltroMetricas } from "@/components/filtro-metricas"
+import { AvisosBell } from "@/components/avisos-bell"
 import { useAuth } from "@/hooks/use-auth"
 import { useFiltrosMetricas } from "@/hooks/use-filtros-metricas"
 import { useDadosMetricas, useRealtimePedidos } from "@/hooks/use-dados-metricas"
@@ -51,6 +52,7 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
             <h1 className="font-heading text-lg font-bold text-card-foreground">Métricas</h1>
           </div>
           <div className="flex items-center gap-2">
+            <AvisosBell />
             <Link href="/administracao" className="hidden items-center gap-2 sm:inline-flex">
               <Button variant="ghost" className="tap gap-2">
                 <Settings className="size-4" aria-hidden="true" />

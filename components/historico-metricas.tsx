@@ -1,25 +1,42 @@
 "use client"
 
+import { useMemo } from "react"
 import useSWR from "swr"
 import { Clock, UtensilsCrossed } from "lucide-react"
 import { getHistoricoPedidos } from "@/lib/pedidos-api"
 import { getPousadas } from "@/lib/pousadas-api"
+import { useFiltrosMetricas } from "@/hooks/use-filtros-metricas"
+import { dentroDoPeriodo, LABEL_PERIODO } from "@/hooks/use-dados-metricas"
 
 export function HistoricoMetricas() {
+  const { periodo, pousadasSelecionadas } = useFiltrosMetricas()
   const { data: historico = [], isLoading } = useSWR("historico-pedidos", getHistoricoPedidos)
   const { data: pousadas = [] } = useSWR("pousadas", getPousadas)
   const mapaPousadas = new Map(pousadas.map((p) => [p.id, p.nome]))
 
+  const filtrado = useMemo(
+    () =>
+      historico.filter((h) => {
+        if (!dentroDoPeriodo(new Date(h.created_at), periodo)) return false
+        const nomePousada = h.pousada_id ? mapaPousadas.get(h.pousada_id) : undefined
+        if (pousadasSelecionadas.length > 0 && !pousadasSelecionadas.includes(nomePousada ?? "")) return false
+        return true
+      }),
+    [historico, periodo, pousadasSelecionadas, mapaPousadas],
+  )
+
   return (
     <section className="rounded-xl border border-border bg-card p-4">
-      <h2 className="mb-3 font-heading text-sm font-semibold text-card-foreground">Edições e cancelamentos</h2>
+      <h2 className="mb-3 font-heading text-sm font-semibold text-card-foreground">
+        Edições e cancelamentos <span className="font-normal text-muted-foreground">{LABEL_PERIODO[periodo]}</span>
+      </h2>
       {isLoading ? (
         <p className="text-sm text-muted-foreground">Carregando histórico...</p>
-      ) : historico.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nenhuma edição ou cancelamento registrado ainda.</p>
+      ) : filtrado.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nenhuma edição ou cancelamento registrado nesse filtro.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {historico.map((h) => {
+          {filtrado.map((h) => {
             const buffet = h.dados_novos?.tipo === "buffet"
             return (
             <li key={h.id} className="rounded-lg border border-border p-3">

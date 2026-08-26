@@ -5,6 +5,15 @@ import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 const COLUNAS =
   "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token, tipo"
 
+/** Avisa admins/equipe (push + log de eventos) sobre um pedido. Best-effort: não bloqueia o fluxo se falhar. */
+export function notificarEvento(tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo", pedidoId: number) {
+  return fetch("/api/notificar/evento", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ tipo, pedidoId }),
+  }).catch(() => {})
+}
+
 export async function salvarPedido(input: {
   titulo: string
   saudacao: string
@@ -18,19 +27,24 @@ export async function salvarPedido(input: {
   const totalItens = input.unidades.reduce((acc, u) => acc + contarItens(u.itens), 0)
   const totalPessoas = input.unidades.reduce((acc, u) => acc + (u.pessoas || 0), 0)
 
-  const { error } = await supabase.from("pedidos").insert({
-    titulo: input.titulo,
-    pousada: input.pousada,
-    pousada_id: input.pousadaId,
-    saudacao: input.saudacao,
-    unidades: input.unidades as never,
-    total_unidades: totalUnidades,
-    total_itens: totalItens,
-    total_pessoas: totalPessoas,
-    data_pedido: input.dataPedido ?? amanhaISO(),
-  })
+  const { data, error } = await supabase
+    .from("pedidos")
+    .insert({
+      titulo: input.titulo,
+      pousada: input.pousada,
+      pousada_id: input.pousadaId,
+      saudacao: input.saudacao,
+      unidades: input.unidades as never,
+      total_unidades: totalUnidades,
+      total_itens: totalItens,
+      total_pessoas: totalPessoas,
+      data_pedido: input.dataPedido ?? amanhaISO(),
+    })
+    .select("id")
+    .single()
 
   if (error) throw error
+  return data.id as number
 }
 
 /** Registra um voucher de Buffet (RLS só permite para pousadas com a tag "buffet" e com o buffet ativo). */
@@ -42,20 +56,25 @@ export async function salvarPedidoBuffet(input: {
   dataPedido: string
 }) {
   const hospede = input.hospede.trim().slice(0, 200)
-  const { error } = await supabase.from("pedidos").insert({
-    tipo: "buffet",
-    titulo: hospede,
-    saudacao: hospede,
-    pousada: input.pousada,
-    pousada_id: input.pousadaId,
-    unidades: [unidadeBuffet(input.pessoas)] as never,
-    total_unidades: 1,
-    total_itens: 0,
-    total_pessoas: input.pessoas,
-    data_pedido: input.dataPedido,
-  })
+  const { data, error } = await supabase
+    .from("pedidos")
+    .insert({
+      tipo: "buffet",
+      titulo: hospede,
+      saudacao: hospede,
+      pousada: input.pousada,
+      pousada_id: input.pousadaId,
+      unidades: [unidadeBuffet(input.pessoas)] as never,
+      total_unidades: 1,
+      total_itens: 0,
+      total_pessoas: input.pessoas,
+      data_pedido: input.dataPedido,
+    })
+    .select("id")
+    .single()
 
   if (error) throw error
+  return data.id as number
 }
 
 /** Datas (yyyy-mm-dd) com pedido de cesta ativo, últimos 60 dias em diante — usado para pintar o calendário. */
