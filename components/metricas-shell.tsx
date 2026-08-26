@@ -54,6 +54,18 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
   const chavePendencias = pendencias.map((p) => p.id).join(",")
   useEffect(() => setPendenciasFechadas(false), [chavePendencias])
 
+  // Na Visão geral o aviso some sozinho depois de 1 minuto (ainda dá pra fechar antes pelo X).
+  // Em Pedidos ele fica fixo, sem esconder. Nas outras abas (Histórico, Feedbacks, Buffet) nem aparece.
+  useEffect(() => {
+    if (pathname !== "/metricas") return
+    const temporizador = setTimeout(() => setPendenciasFechadas(true), 60_000)
+    return () => clearTimeout(temporizador)
+  }, [pathname, chavePendencias])
+
+  const abaComPendencia = pathname === "/metricas" || pathname === "/metricas/pedidos"
+  const pendenciaFixa = pathname === "/metricas/pedidos"
+  const mostrarPendencia = abaComPendencia && pendencias.length > 0 && (pendenciaFixa || !pendenciasFechadas)
+
   const sair = async () => {
     await supabase.auth.signOut()
     router.replace("/")
@@ -138,21 +150,23 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
 
       <main className="mx-auto max-w-5xl px-4 py-5">
         <AvisoPushDesativado />
-        {pendencias.length > 0 && !pendenciasFechadas && (
+        {mostrarPendencia && (
           <div className="mb-5 flex items-start gap-2 rounded-2xl border border-yellow-300 bg-yellow-100 p-3.5 text-sm text-yellow-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <div className="flex-1">
               <p className="font-medium">Pousadas sem pedido hoje ({pendencias.length})</p>
               <p className="mt-0.5 text-yellow-900/80">{pendencias.map((p) => p.nome).join(", ")}</p>
             </div>
-            <button
-              type="button"
-              onClick={() => setPendenciasFechadas(true)}
-              aria-label="Fechar aviso de pendências"
-              className="tap flex size-6 shrink-0 items-center justify-center rounded-md text-yellow-900/70 transition-colors hover:bg-yellow-200 hover:text-yellow-900"
-            >
-              <X className="size-4" aria-hidden="true" />
-            </button>
+            {!pendenciaFixa && (
+              <button
+                type="button"
+                onClick={() => setPendenciasFechadas(true)}
+                aria-label="Fechar aviso de pendências"
+                className="tap flex size-6 shrink-0 items-center justify-center rounded-md text-yellow-900/70 transition-colors hover:bg-yellow-200 hover:text-yellow-900"
+              >
+                <X className="size-4" aria-hidden="true" />
+              </button>
+            )}
           </div>
         )}
         {children}
