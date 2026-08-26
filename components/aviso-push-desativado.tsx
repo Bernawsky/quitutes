@@ -1,14 +1,25 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { BellOff, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePushNotifications } from "@/hooks/use-push-notifications"
 
-/** Avisa sempre que as notificações push estiverem desligadas — some sozinho assim que forem ativadas. */
+const CHAVE_DISPENSADO = "quitutes-aviso-push-dispensado"
+
+/** Avisa uma única vez por pessoa que as notificações push estão desligadas — some para sempre depois de fechado ou ativado. */
 export function AvisoPushDesativado() {
   const { estado, carregando, ativar, iosNaoInstalado } = usePushNotifications()
-  const [fechado, setFechado] = useState(false)
+  const [fechado, setFechado] = useState(true)
+
+  useEffect(() => {
+    setFechado(localStorage.getItem(CHAVE_DISPENSADO) === "1")
+  }, [])
+
+  const dispensar = () => {
+    localStorage.setItem(CHAVE_DISPENSADO, "1")
+    setFechado(true)
+  }
 
   if (estado === "ativo" || fechado) return null
 
@@ -32,7 +43,7 @@ export function AvisoPushDesativado() {
       )}
       <button
         type="button"
-        onClick={() => setFechado(true)}
+        onClick={dispensar}
         aria-label="Fechar aviso"
         className="tap flex size-6 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
       >
