@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     .from("pedidos")
     .select("pousada, total_pessoas, status, data_pedido")
     .gte("data_pedido", seteDiasAtrasISO)
+    .eq("tipo", "cesta")
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   const ativos = (pedidos ?? []).filter((p) => p.status !== "cancelado")

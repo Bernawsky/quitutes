@@ -1,7 +1,7 @@
 import { supabase } from "@/lib/supabase/client"
 import type { Pousada } from "@/lib/pousadas"
 
-const COLUNAS = "id, slug, nome, usuario, subtitulo, horarios, unidades"
+const COLUNAS = "id, slug, nome, usuario, subtitulo, horarios, unidades, tags"
 
 export async function getPousadas(): Promise<Pousada[]> {
   const { data, error } = await supabase.from("pousadas").select(COLUNAS).eq("ativa", true).order("nome")

@@ -1,9 +1,9 @@
 import { supabase } from "@/lib/supabase/client"
-import { amanhaISO, contarItens, type Feedback, type Pedido, type UnidadePedido } from "@/lib/pedidos"
+import { amanhaISO, contarItens, hojeISO, unidadeBuffet, type Feedback, type Pedido, type UnidadePedido } from "@/lib/pedidos"
 import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 
 const COLUNAS =
-  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token"
+  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token, tipo"
 
 export async function salvarPedido(input: {
   titulo: string
@@ -33,14 +33,48 @@ export async function salvarPedido(input: {
   if (error) throw error
 }
 
+/** Registra um voucher de Buffet (RLS só permite para pousadas com a tag "buffet" e com o buffet ativo). */
+export async function salvarPedidoBuffet(input: {
+  pousadaId: string
+  pousada: string
+  pessoas: number
+  hospede: string
+  dataPedido: string
+}) {
+  const hospede = input.hospede.trim().slice(0, 200)
+  const { error } = await supabase.from("pedidos").insert({
+    tipo: "buffet",
+    titulo: hospede,
+    saudacao: hospede,
+    pousada: input.pousada,
+    pousada_id: input.pousadaId,
+    unidades: [unidadeBuffet(input.pessoas)] as never,
+    total_unidades: 1,
+    total_itens: 0,
+    total_pessoas: input.pessoas,
+    data_pedido: input.dataPedido,
+  })
+
+  if (error) throw error
+}
+
+/** Vouchers de Buffet (RLS: admins veem todos). Sem data, traz os mais recentes primeiro. */
+export async function getPedidosBuffet(dataISO?: string): Promise<Pedido[]> {
+  let query = supabase.from("pedidos").select(COLUNAS).eq("tipo", "buffet")
+  query = dataISO ? query.eq("data_pedido", dataISO) : query.gte("data_pedido", hojeISO())
+  const { data, error } = await query.order("data_pedido", { ascending: false }).limit(200)
+  if (error) throw error
+  return (data ?? []) as unknown as Pedido[]
+}
+
 export type LogPedido = {
   id: number
   pedido_id: number
   pousada_id: string | null
   acao: string
   motivo: string | null
-  dados_anteriores: { titulo?: string; saudacao?: string } | null
-  dados_novos: { titulo?: string; saudacao?: string } | null
+  dados_anteriores: { titulo?: string; saudacao?: string; tipo?: string } | null
+  dados_novos: { titulo?: string; saudacao?: string; tipo?: string } | null
   criado_por: string | null
   created_at: string
 }
@@ -108,13 +142,14 @@ export async function cancelarPedidoPousada(input: { id: number; motivo?: string
   return data as unknown as Pedido
 }
 
-/** Pedidos ativos de uma data de entrega (RLS: admins e equipe da cozinha veem de todas as pousadas). */
+/** Pedidos de cesta ativos de uma data de entrega (RLS: admins e equipe da cozinha veem de todas as pousadas). */
 export async function getPedidosPorData(dataISO: string): Promise<Pedido[]> {
   const { data, error } = await supabase
     .from("pedidos")
     .select(COLUNAS)
     .eq("data_pedido", dataISO)
     .eq("status", "ativo")
+    .eq("tipo", "cesta")
     .order("pousada", { ascending: true })
   if (error) throw error
   return (data ?? []) as unknown as Pedido[]

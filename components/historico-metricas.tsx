@@ -1,7 +1,7 @@
 "use client"
 
 import useSWR from "swr"
-import { Clock } from "lucide-react"
+import { Clock, UtensilsCrossed } from "lucide-react"
 import { getHistoricoPedidos } from "@/lib/pedidos-api"
 import { getPousadas } from "@/lib/pousadas-api"
 
@@ -19,9 +19,17 @@ export function HistoricoMetricas() {
         <p className="text-sm text-muted-foreground">Nenhuma edição ou cancelamento registrado ainda.</p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {historico.map((h) => (
+          {historico.map((h) => {
+            const buffet = h.dados_novos?.tipo === "buffet"
+            return (
             <li key={h.id} className="rounded-lg border border-border p-3">
-              <p className="text-sm font-semibold text-card-foreground">
+              <p className="flex items-center gap-1.5 text-sm font-semibold text-card-foreground">
+                {buffet && (
+                  <span className="flex items-center gap-1 rounded-md bg-accent/40 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-accent-foreground uppercase">
+                    <UtensilsCrossed className="size-3" aria-hidden="true" />
+                    Buffet
+                  </span>
+                )}
                 Pedido #{h.pedido_id} · {h.pousada_id ? (mapaPousadas.get(h.pousada_id) ?? "Pousada removida") : "—"} —{" "}
                 {h.acao === "cancelado" ? "Cancelado" : "Editado"}
               </p>
@@ -31,7 +39,8 @@ export function HistoricoMetricas() {
               </p>
               {h.motivo && <p className="mt-1 text-xs font-medium text-destructive">Motivo: {h.motivo}</p>}
             </li>
-          ))}
+            )
+          })}
         </ul>
       )}
     </section>

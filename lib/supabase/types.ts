@@ -22,6 +22,7 @@ export type Database = {
           atualizado_por: string | null
           data_pedido: string
           feedback_token: string
+          tipo: string
         }
         Insert: {
           id?: number
@@ -41,6 +42,7 @@ export type Database = {
           atualizado_por?: string | null
           data_pedido?: string
           feedback_token?: string
+          tipo?: string
         }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
         Relationships: []
@@ -84,6 +86,7 @@ export type Database = {
           ativa: boolean
           created_at: string
           updated_at: string
+          tags: string[]
         }
         Insert: {
           id?: string
@@ -97,6 +100,7 @@ export type Database = {
           ativa?: boolean
           created_at?: string
           updated_at?: string
+          tags?: string[]
         }
         Update: Partial<Database["public"]["Tables"]["pousadas"]["Insert"]>
         Relationships: []
@@ -131,6 +135,12 @@ export type Database = {
           created_at?: string
         }
         Update: Partial<Database["public"]["Tables"]["feedbacks"]["Insert"]>
+        Relationships: []
+      }
+      configuracoes: {
+        Row: { id: boolean; buffet_ativo: boolean }
+        Insert: { id?: boolean; buffet_ativo?: boolean }
+        Update: Partial<Database["public"]["Tables"]["configuracoes"]["Insert"]>
         Relationships: []
       }
       metricas_exportadas: {

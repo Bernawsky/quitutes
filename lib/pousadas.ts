@@ -9,6 +9,8 @@ export type Pousada = {
   unidades: UnidadeBase[]
   /** Horários disponíveis para esta pousada. Quando há só um, ele já vem fixo/selecionado. */
   horarios: readonly string[]
+  /** Tags livres (ex: "buffet" — habilita a aba de voucher do Buffet). */
+  tags?: string[]
 }
 
 /** E-mail sintético usado para autenticar a pousada no Supabase Auth (ela não tem e-mail real). */

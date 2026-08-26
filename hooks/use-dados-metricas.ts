@@ -111,13 +111,15 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
     })
   }, [pedidos, periodo, pousadasSelecionadas, busca, dataExata])
 
-  const ativos = useMemo(() => filtrados.filter((p) => p.status !== "cancelado"), [filtrados])
+  // Buffet não entra nos totais/gráficos de cesta — conta como pedido só nas listagens e históricos, destacado à parte.
+  const ativos = useMemo(() => filtrados.filter((p) => p.status !== "cancelado" && p.tipo !== "buffet"), [filtrados])
 
   const ativosAnteriores = useMemo(
     () =>
       pedidos.filter(
         (p) =>
           p.status !== "cancelado" &&
+          p.tipo !== "buffet" &&
           dentroDoPeriodoAnterior(dataLocal(p.data_pedido), periodo) &&
           (pousadasSelecionadas.length === 0 || pousadasSelecionadas.includes(p.pousada ?? "")),
       ),
@@ -189,7 +191,7 @@ export function useDadosMetricas(extra?: { busca?: string; dataExata?: string })
   const pendencias = useMemo(() => {
     const hoje = hojeISO()
     const pousadasComPedidoHoje = new Set(
-      pedidos.filter((p) => p.status !== "cancelado" && p.data_pedido === hoje).map((p) => p.pousada_id),
+      pedidos.filter((p) => p.status !== "cancelado" && p.tipo !== "buffet" && p.data_pedido === hoje).map((p) => p.pousada_id),
     )
     return pousadas.filter((p) => !pousadasComPedidoHoje.has(p.id))
   }, [pedidos, pousadas])

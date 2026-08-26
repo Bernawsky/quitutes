@@ -22,6 +22,7 @@ export async function GET(request: Request) {
     .select("id, created_at, pousada, unidades, total_pessoas, status")
     .eq("data_pedido", hojeISO)
     .neq("status", "cancelado")
+    .eq("tipo", "cesta")
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

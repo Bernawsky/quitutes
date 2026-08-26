@@ -1,12 +1,13 @@
 "use client"
 
 import { useMemo, useState } from "react"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { UnidadeCard } from "@/components/unidade-card"
 import { MeusPedidos } from "@/components/meus-pedidos"
 import { FeedbacksLista } from "@/components/feedbacks-lista"
+import { BuffetForm } from "@/components/buffet-form"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
@@ -51,8 +52,19 @@ export function copiarFallback(texto: string): boolean {
   }
 }
 
+type Aba = "novo" | "meus" | "feedbacks" | "buffet"
+
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
-  const [aba, setAba] = useState<"novo" | "meus" | "feedbacks">("novo")
+  const [aba, setAba] = useState<Aba>("novo")
+  const temBuffet = pousada.tags?.includes("buffet") ?? false
+
+  const abas: { key: Aba; label: string; icone?: typeof ListChecks }[] = [
+    { key: "novo", label: "Novo pedido" },
+    { key: "meus", label: "Meus pedidos", icone: ListChecks },
+    { key: "feedbacks", label: "Feedbacks", icone: MessageSquareHeart },
+    ...(temBuffet ? [{ key: "buffet" as const, label: "Buffet", icone: UtensilsCrossed }] : []),
+  ]
+  const indiceAba = Math.max(0, abas.findIndex((a) => a.key === aba))
   const [saudacao, setSaudacao] = useState(dataSaudacaoPara(amanhaISO()))
   const [saudacaoEditada, setSaudacaoEditada] = useState(false)
   const [dataPedido, setDataPedido] = useState(amanhaISO())
@@ -161,51 +173,32 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
           )}
         </div>
         <div className="mx-auto max-w-5xl px-4 pb-4">
-          <div className="relative grid grid-cols-3 rounded-xl bg-muted p-1">
+          <div
+            className="relative grid rounded-xl bg-muted p-1"
+            style={{ gridTemplateColumns: `repeat(${abas.length}, minmax(0, 1fr))` }}
+          >
             <span
-              className="absolute inset-y-1 w-[calc(33.333%-5.5px)] rounded-lg bg-primary shadow-sm transition-transform duration-300 ease-out"
+              className="absolute inset-y-1 left-1 rounded-lg bg-primary shadow-sm transition-transform duration-300 ease-out"
               style={{
-                transform:
-                  aba === "meus"
-                    ? "translateX(calc(100% + 8px))"
-                    : aba === "feedbacks"
-                      ? "translateX(calc(200% + 16px))"
-                      : "translateX(0)",
+                width: `calc(${100 / abas.length}% - ${8 / abas.length}px)`,
+                transform: `translateX(${indiceAba * 100}%)`,
               }}
               aria-hidden="true"
             />
-            <button
-              type="button"
-              onClick={() => setAba("novo")}
-              className={cn(
-                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
-                aba === "novo" ? "text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              Novo pedido
-            </button>
-            <button
-              type="button"
-              onClick={() => setAba("meus")}
-              className={cn(
-                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
-                aba === "meus" ? "text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              <ListChecks className="size-3.5" aria-hidden="true" />
-              Meus pedidos
-            </button>
-            <button
-              type="button"
-              onClick={() => setAba("feedbacks")}
-              className={cn(
-                "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
-                aba === "feedbacks" ? "text-primary-foreground" : "text-muted-foreground",
-              )}
-            >
-              <MessageSquareHeart className="size-3.5" aria-hidden="true" />
-              Feedbacks
-            </button>
+            {abas.map(({ key, label, icone: Icone }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setAba(key)}
+                className={cn(
+                  "tap relative z-10 flex min-h-10 items-center justify-center gap-1.5 rounded-lg text-sm font-semibold transition-colors",
+                  aba === key ? "text-primary-foreground" : "text-muted-foreground",
+                )}
+              >
+                {Icone && <Icone className="size-3.5" aria-hidden="true" />}
+                {label}
+              </button>
+            ))}
           </div>
         </div>
       </header>
@@ -217,6 +210,10 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       ) : aba === "feedbacks" ? (
         <main className="mx-auto max-w-5xl px-4 py-6">
           <FeedbacksLista />
+        </main>
+      ) : aba === "buffet" ? (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <BuffetForm pousada={pousada} />
         </main>
       ) : (
         <>

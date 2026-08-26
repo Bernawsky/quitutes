@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Clock, ChevronDown, Ban, CalendarDays } from "lucide-react"
+import { Search, Clock, ChevronDown, Ban, CalendarDays, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
@@ -70,6 +70,7 @@ export function PedidosMetricas() {
           {filtrados.map((p) => {
             const cancelado = p.status === "cancelado"
             const aberto = expandido === p.id
+            const buffet = p.tipo === "buffet"
             return (
               <li key={p.id} className={cn("rounded-lg", cancelado && "bg-destructive/5")}>
                 <button
@@ -82,12 +83,20 @@ export function PedidosMetricas() {
                     aria-hidden="true"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-card-foreground">
+                    <p className="flex items-center gap-1.5 truncate text-sm font-medium text-card-foreground">
+                      {buffet && (
+                        <span className="flex shrink-0 items-center gap-1 rounded-md bg-accent/40 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-accent-foreground uppercase">
+                          <UtensilsCrossed className="size-3" aria-hidden="true" />
+                          Buffet
+                        </span>
+                      )}
                       #{p.id} · {p.pousada ?? "—"} — {p.saudacao || p.titulo}
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="size-3 shrink-0" aria-hidden="true" />
-                      Entrega: {rotuloData(p.data_pedido)} • {p.total_unidades} cesta(s) • {p.total_pessoas} pessoa(s)
+                      {buffet
+                        ? `Buffet: ${rotuloData(p.data_pedido)} • ${p.total_pessoas} pessoa(s)`
+                        : `Entrega: ${rotuloData(p.data_pedido)} • ${p.total_unidades} cesta(s) • ${p.total_pessoas} pessoa(s)`}
                     </p>
                   </div>
                   {cancelado && (
@@ -100,17 +109,21 @@ export function PedidosMetricas() {
 
                 {aberto && (
                   <div className="px-3 pb-3 pl-9">
-                    <ul className="flex flex-col gap-1 border-l border-border pl-3">
-                      {(p.unidades ?? []).map((u, i) => {
-                        const obs = observacoesUnidade(u).join(", ").replace(/\*/g, "")
-                        return (
-                          <li key={`${p.id}-${i}`} className="text-xs text-muted-foreground">
-                            {normalizarHorario(u.horario)} • {u.unidade} — {u.pessoas} pessoa(s)
-                            {obs ? ` (${obs})` : ""}
-                          </li>
-                        )
-                      })}
-                    </ul>
+                    {buffet ? (
+                      <p className="border-l border-border pl-3 text-xs text-muted-foreground">Hóspede: {p.saudacao || p.titulo}</p>
+                    ) : (
+                      <ul className="flex flex-col gap-1 border-l border-border pl-3">
+                        {(p.unidades ?? []).map((u, i) => {
+                          const obs = observacoesUnidade(u).join(", ").replace(/\*/g, "")
+                          return (
+                            <li key={`${p.id}-${i}`} className="text-xs text-muted-foreground">
+                              {normalizarHorario(u.horario)} • {u.unidade} — {u.pessoas} pessoa(s)
+                              {obs ? ` (${obs})` : ""}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    )}
                     {cancelado && p.motivo_cancelamento && (
                       <p className="mt-2 text-xs font-medium text-destructive">Motivo: {p.motivo_cancelamento}</p>
                     )}

@@ -3,7 +3,7 @@
 import { useState } from "react"
 import useSWR from "swr"
 import { toast } from "sonner"
-import { Clock, Pencil, Ban, ShoppingBasket, CalendarDays, Lock, Star } from "lucide-react"
+import { Clock, Pencil, Ban, ShoppingBasket, CalendarDays, Lock, Star, UtensilsCrossed, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { getMeusPedidos } from "@/lib/pedidos-api"
 import { normalizarHorario, observacoesUnidade, podeEditarPedido, rotuloData, type Pedido } from "@/lib/pedidos"
@@ -45,11 +45,18 @@ export function MeusPedidos({ pousada }: { pousada: Pousada }) {
       {pedidos.map((p) => {
         const cancelado = p.status === "cancelado"
         const editavel = podeEditarPedido(p)
+        const buffet = p.tipo === "buffet"
         return (
           <div key={p.id} className={"rounded-2xl border p-4 " + (cancelado ? "border-destructive/40 bg-destructive/5" : "border-border bg-card")}>
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="flex flex-wrap items-center gap-1.5">
+                  {buffet && (
+                    <span className="flex items-center gap-1 rounded-md bg-accent/40 px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-accent-foreground uppercase">
+                      <UtensilsCrossed className="size-3" aria-hidden="true" />
+                      Buffet
+                    </span>
+                  )}
                   <p className="text-sm font-semibold text-card-foreground">
                     #{p.id} — {p.saudacao || p.titulo}
                   </p>
@@ -60,17 +67,20 @@ export function MeusPedidos({ pousada }: { pousada: Pousada }) {
                 </div>
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <Clock className="size-3.5" aria-hidden="true" />
-                  {new Date(p.created_at).toLocaleString("pt-BR")} • {p.total_unidades} cesta(s) • {p.total_pessoas} pessoa(s)
+                  {new Date(p.created_at).toLocaleString("pt-BR")} •{" "}
+                  {buffet ? `${p.total_pessoas} pessoa(s)` : `${p.total_unidades} cesta(s) • ${p.total_pessoas} pessoa(s)`}
                   {cancelado ? " • Cancelado" : ""}
                 </p>
               </div>
               {!cancelado &&
                 (editavel ? (
                   <div className="flex gap-2">
-                    <Button variant="outline" className="tap gap-2" onClick={() => setEditando(p)}>
-                      <Pencil className="size-4" aria-hidden="true" />
-                      Editar
-                    </Button>
+                    {!buffet && (
+                      <Button variant="outline" className="tap gap-2" onClick={() => setEditando(p)}>
+                        <Pencil className="size-4" aria-hidden="true" />
+                        Editar
+                      </Button>
+                    )}
                     <Button variant="destructive" className="tap gap-2" onClick={() => setCancelando(p)}>
                       <Ban className="size-4" aria-hidden="true" />
                       Cancelar
@@ -83,19 +93,26 @@ export function MeusPedidos({ pousada }: { pousada: Pousada }) {
                   </span>
                 ))}
             </div>
-            <ul className="mt-3 flex flex-col gap-1">
-              {(p.unidades ?? []).map((u, i) => {
-                const obs = observacoesUnidade(u).join(", ").replace(/\*/g, "")
-                return (
-                  <li key={`${p.id}-${i}`} className="text-xs text-muted-foreground">
-                    {normalizarHorario(u.horario)} • {u.unidade} — {u.pessoas} pessoa(s)
-                    {obs ? ` (${obs})` : ""}
-                  </li>
-                )
-              })}
-            </ul>
+            {buffet ? (
+              <p className="mt-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Users className="size-3.5" aria-hidden="true" />
+                Hóspede: {p.saudacao || p.titulo}
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-col gap-1">
+                {(p.unidades ?? []).map((u, i) => {
+                  const obs = observacoesUnidade(u).join(", ").replace(/\*/g, "")
+                  return (
+                    <li key={`${p.id}-${i}`} className="text-xs text-muted-foreground">
+                      {normalizarHorario(u.horario)} • {u.unidade} — {u.pessoas} pessoa(s)
+                      {obs ? ` (${obs})` : ""}
+                    </li>
+                  )
+                })}
+              </ul>
+            )}
             {cancelado && p.motivo_cancelamento && <p className="mt-2 text-xs font-medium text-destructive">Motivo: {p.motivo_cancelamento}</p>}
-            {!cancelado && p.feedback_token && (
+            {!cancelado && !buffet && p.feedback_token && (
               <Button
                 variant="ghost"
                 size="sm"

@@ -20,6 +20,7 @@ export async function GET(request: Request) {
     .from("pedidos")
     .select("pousada_id")
     .neq("status", "cancelado")
+    .eq("tipo", "cesta")
     .eq("data_pedido", hoje)
   if (erroPedidos) return NextResponse.json({ error: erroPedidos.message }, { status: 500 })
 

@@ -31,18 +31,19 @@ export type Ranking = { unidade: string; total: number }
 export function exportarPedidosCSV(pedidos: Pedido[], ranking: Ranking[], sufixo: string) {
   const linhas: string[] = []
   linhas.push("PEDIDOS")
-  linhas.push(["ID", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"].map(csvCampo).join(";"))
+  linhas.push(["ID", "Tipo", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"].map(csvCampo).join(";"))
   for (const p of pedidos) {
     for (const u of p.unidades ?? []) {
       linhas.push(
         [
           p.id,
+          p.tipo === "buffet" ? "Buffet" : "Cesta",
           dataPedidoBR(p.data_pedido),
           dataBR(p.created_at),
           p.pousada ?? "Vale do Sol",
           p.status === "cancelado" ? "Cancelado" : "Ativo",
           u.unidade,
-          normalizarHorario(u.horario),
+          p.tipo === "buffet" ? "7h às 12h" : normalizarHorario(u.horario),
           u.pessoas,
           observacoesUnidade(u).join(", ").replace(/\*/g, ""),
         ]
@@ -74,16 +75,17 @@ export function exportarPedidosPDF(
 
   autoTable(doc, {
     startY: 30,
-    head: [["ID", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"]],
+    head: [["ID", "Tipo", "Café para", "Registrado em", "Pousada", "Situação", "Unidade", "Horário", "Pessoas", "Observações"]],
     body: pedidos.flatMap((p) =>
       (p.unidades ?? []).map((u) => [
         String(p.id),
+        p.tipo === "buffet" ? "Buffet" : "Cesta",
         dataPedidoBR(p.data_pedido),
         dataBR(p.created_at),
         p.pousada ?? "Vale do Sol",
         p.status === "cancelado" ? "Cancelado" : "Ativo",
         u.unidade,
-        normalizarHorario(u.horario),
+        p.tipo === "buffet" ? "7h às 12h" : normalizarHorario(u.horario),
         String(u.pessoas),
         observacoesUnidade(u).join(", ").replace(/\*/g, ""),
       ]),

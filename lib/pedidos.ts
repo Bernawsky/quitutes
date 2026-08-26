@@ -73,6 +73,17 @@ export type Pedido = {
   updated_at?: string
   data_pedido: string
   feedback_token?: string
+  tipo: "cesta" | "buffet"
+}
+
+export const NOME_UNIDADE_BUFFET = "Buffet"
+/** Só usado internamente — não passa por normalizarHorario() porque "Buffet" não colide com nenhum prefixo de HORARIOS. */
+export const HORARIO_BUFFET = "Buffet"
+export const JANELA_BUFFET = "7h às 12h"
+
+/** Unidade sintética usada para um pedido de Buffet — mantém o mesmo formato de "cesta" nas listagens. */
+export function unidadeBuffet(pessoas: number): UnidadePedido {
+  return { unidade: NOME_UNIDADE_BUFFET, horario: HORARIO_BUFFET, pessoas, itens: {} }
 }
 
 export type Feedback = {
