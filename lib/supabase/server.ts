@@ -46,3 +46,15 @@ export async function exigirAdminServer() {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle()
   if (!data) redirect("/")
 }
+
+/** Usado na página /leitor: acesso liberado para admins e para a equipe da cozinha (papel "operador"). */
+export async function exigirEquipeServer() {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/")
+
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).in("role", ["admin", "operador"])
+  if (!data || data.length === 0) redirect("/")
+}

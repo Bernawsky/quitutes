@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff } from "lucide-react"
+import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -40,6 +40,16 @@ const ADMINS = [
   },
 ] as const
 
+/** Equipe interna sem conta de pousada (ex: cozinha), acessa só a lista de preparo em /leitor. */
+const EQUIPE = [
+  {
+    valor: "equipe:cozinha",
+    nome: "Equipe da Cozinha",
+    papel: "Cozinha",
+    email: "cozinha@equipe.quitutes.internal",
+  },
+] as const
+
 export function PousadaLogin({ pousadaFixa }: Props) {
   const router = useRouter()
   const [pousadas, setPousadas] = useState<Pousada[]>(pousadaFixa ? [pousadaFixa] : [])
@@ -58,9 +68,11 @@ export function PousadaLogin({ pousadaFixa }: Props) {
   const rotulos: Record<string, string> = {
     ...Object.fromEntries(pousadas.map((p) => [p.slug, p.nome])),
     ...Object.fromEntries(ADMINS.map((a) => [a.valor, a.nome])),
+    ...Object.fromEntries(EQUIPE.map((e) => [e.valor, e.nome])),
   }
 
   const admin = ADMINS.find((a) => a.valor === selecionado)
+  const equipe = EQUIPE.find((e) => e.valor === selecionado)
 
   const submeter = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,6 +88,18 @@ export function PousadaLogin({ pousadaFixa }: Props) {
       }
       toast.success(`Bem-vindo, ${admin.nome}!`)
       router.push("/metricas")
+      return
+    }
+
+    if (equipe) {
+      const { error } = await supabase.auth.signInWithPassword({ email: equipe.email, password: senha })
+      setEnviando(false)
+      if (error) {
+        toast.error("Senha inválida para a conta da equipe")
+        return
+      }
+      toast.success(`Bem-vindo, ${equipe.nome}!`)
+      router.push("/leitor")
       return
     }
 
@@ -138,6 +162,19 @@ export function PousadaLogin({ pousadaFixa }: Props) {
                       <span className="font-medium">{a.nome}</span>
                       <span className="ml-1 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
                         {a.papel}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+                <SelectSeparator />
+                <SelectGroup>
+                  <SelectLabel className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Equipe</SelectLabel>
+                  {EQUIPE.map((e) => (
+                    <SelectItem key={e.valor} value={e.valor} className="rounded-lg py-2.5">
+                      <ChefHat className="size-4 text-accent-foreground" aria-hidden="true" />
+                      <span className="font-medium">{e.nome}</span>
+                      <span className="ml-1 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
+                        {e.papel}
                       </span>
                     </SelectItem>
                   ))}

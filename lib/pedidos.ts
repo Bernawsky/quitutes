@@ -145,6 +145,29 @@ export function rotuloData(dataISO: string): string {
   return dataLocal(dataISO).toLocaleDateString("pt-BR", { day: "2-digit", month: "long" })
 }
 
+export type ContagemCestas = { individual: number; dupla: number; tripla: number }
+
+/**
+ * Decompõe um número de pessoas em cestas de até 3 pessoas (individual/dupla/tripla),
+ * evitando sobrar 1 pessoa sozinha sempre que possível — ex: 4 pessoas viram 2 duplas,
+ * não 1 tripla + 1 individual.
+ */
+export function decomporCestas(pessoas: number): ContagemCestas {
+  if (pessoas <= 0) return { individual: 0, dupla: 0, tripla: 0 }
+  if (pessoas === 1) return { individual: 1, dupla: 0, tripla: 0 }
+
+  const resto = pessoas % 3
+  const triplasBase = Math.floor(pessoas / 3)
+
+  if (resto === 0) return { individual: 0, dupla: 0, tripla: triplasBase }
+  if (resto === 2) return { individual: 0, dupla: 1, tripla: triplasBase }
+  return { individual: 0, dupla: 2, tripla: triplasBase - 1 }
+}
+
+export function somarCestas(a: ContagemCestas, b: ContagemCestas): ContagemCestas {
+  return { individual: a.individual + b.individual, dupla: a.dupla + b.dupla, tripla: a.tripla + b.tripla }
+}
+
 // Observações de uma unidade: dietas em negrito + itens + texto livre
 export function observacoesUnidade(u: UnidadePedido): string[] {
   const partes: string[] = []

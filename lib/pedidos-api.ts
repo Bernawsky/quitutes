@@ -108,6 +108,18 @@ export async function cancelarPedidoPousada(input: { id: number; motivo?: string
   return data as unknown as Pedido
 }
 
+/** Pedidos ativos de uma data de entrega (RLS: admins e equipe da cozinha veem de todas as pousadas). */
+export async function getPedidosPorData(dataISO: string): Promise<Pedido[]> {
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select(COLUNAS)
+    .eq("data_pedido", dataISO)
+    .eq("status", "ativo")
+    .order("pousada", { ascending: true })
+  if (error) throw error
+  return (data ?? []) as unknown as Pedido[]
+}
+
 /** Feedbacks recebidos (RLS: admins veem todos, pousada só os dos próprios pedidos). */
 export async function getFeedbacks(): Promise<Feedback[]> {
   const { data, error } = await supabase
