@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { cookies } from "next/headers"
+import { redirect } from "next/navigation"
 import type { Database } from "@/lib/supabase/types"
 
 // Cliente Supabase para uso em Server Components / Server Actions.
@@ -28,4 +29,20 @@ export async function createServerSupabaseClient() {
       },
     },
   )
+}
+
+/**
+ * Usado em Server Components de páginas restritas a administradores (métricas, administração).
+ * Só checar `user` não bastava: qualquer pousada logada também passava por lá — o papel
+ * precisa ser conferido no servidor (RLS de user_roles já limita a leitura ao próprio papel).
+ */
+export async function exigirAdminServer() {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/")
+
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).eq("role", "admin").maybeSingle()
+  if (!data) redirect("/")
 }

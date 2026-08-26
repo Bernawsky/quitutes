@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
-import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { exigirAdminServer } from "@/lib/supabase/server"
 import { listarAdministradores } from "@/app/actions/administracao"
 import { AdministracaoPainel } from "@/components/administracao-painel"
 
@@ -12,12 +11,7 @@ export const metadata: Metadata = {
 }
 
 export default async function AdministracaoPage() {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect("/")
+  await exigirAdminServer()
 
   const administradores = await listarAdministradores().catch(() => [])
 

@@ -1,6 +1,5 @@
 import type { Metadata } from "next"
-import { redirect } from "next/navigation"
-import { createServerSupabaseClient } from "@/lib/supabase/server"
+import { exigirAdminServer } from "@/lib/supabase/server"
 import { MetricasShell } from "@/components/metricas-shell"
 
 export const dynamic = "force-dynamic"
@@ -15,12 +14,7 @@ export const metadata: Metadata = {
 }
 
 export default async function MetricasLayout({ children }: { children: React.ReactNode }) {
-  const supabase = await createServerSupabaseClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) redirect("/")
+  await exigirAdminServer()
 
   return <MetricasShell>{children}</MetricasShell>
 }
