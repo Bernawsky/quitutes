@@ -11,9 +11,13 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
+const TITULO_PADRAO = 'Quitutes — Pedidos de Café da Manhã'
+const DESCRICAO_PADRAO = 'Pedidos de cesta de café da manhã das pousadas de Ibitipoca, direto para o grupo do WhatsApp.'
+
 export const metadata: Metadata = {
-  title: 'Reservas de Chalés',
-  description: 'Sistema de reservas dos chalés com envio rápido pelo WhatsApp',
+  metadataBase: new URL('https://quitutes-beth.vercel.app'),
+  title: TITULO_PADRAO,
+  description: DESCRICAO_PADRAO,
   generator: 'v0.app',
   icons: {
     icon: [
@@ -31,6 +35,20 @@ export const metadata: Metadata = {
       },
     ],
     apple: '/apple-icon.png',
+  },
+  openGraph: {
+    title: TITULO_PADRAO,
+    description: DESCRICAO_PADRAO,
+    siteName: 'Quitutes',
+    locale: 'pt_BR',
+    type: 'website',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Quitutes — Pedidos de Café da Manhã' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: TITULO_PADRAO,
+    description: DESCRICAO_PADRAO,
+    images: ['/og-image.png'],
   },
 }
 

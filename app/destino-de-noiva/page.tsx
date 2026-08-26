@@ -1,5 +1,6 @@
 import type { Metadata } from "next"
 import { PedidosPortal } from "@/components/pedidos-portal"
+import { IMAGEM_OG } from "@/lib/metadata"
 
 export const metadata: Metadata = {
   title: "Destino de Noiva — Pedidos de Café da Manhã",
@@ -8,6 +9,7 @@ export const metadata: Metadata = {
     title: "Destino de Noiva — Pedidos de Café da Manhã",
     description: "Monte as cestas do chalé da Destino de Noiva e envie no grupo do WhatsApp.",
     type: "website",
+    images: IMAGEM_OG,
   },
 }
 
