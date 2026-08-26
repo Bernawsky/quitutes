@@ -5,9 +5,8 @@ import { toast } from "sonner"
 import { Ban } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { copiarTexto } from "@/components/reservas-app"
 import { cancelarPedidoPousada } from "@/lib/pedidos-api"
-import { LINK_GRUPO, gerarMensagemCancelamento, type Pedido } from "@/lib/pedidos"
+import type { Pedido } from "@/lib/pedidos"
 
 export function CancelarPedidoDialog({
   pedido,
@@ -22,7 +21,6 @@ export function CancelarPedidoDialog({
   const [pending, startTransition] = useTransition()
 
   const confirmar = () => {
-    copiarTexto(gerarMensagemCancelamento(pedido, motivo.trim()))
     startTransition(async () => {
       try {
         await cancelarPedidoPousada({ id: pedido.id, motivo: motivo.trim() })
@@ -33,12 +31,8 @@ export function CancelarPedidoDialog({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ pedidoId: pedido.id }),
         }).catch(() => {})
-        toast.success("Pedido cancelado", { description: "Mensagem copiada. Abrindo o grupo do WhatsApp." })
+        toast.success("Pedido cancelado", { description: "Registrado no sistema." })
         onClose()
-        window.setTimeout(() => {
-          const aba = window.open(LINK_GRUPO, "_blank", "noopener,noreferrer")
-          if (!aba) window.location.href = LINK_GRUPO
-        }, 1200)
       } catch (e) {
         toast.error("Não foi possível cancelar", { description: e instanceof Error ? e.message : undefined })
       }
@@ -53,8 +47,8 @@ export function CancelarPedidoDialog({
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
           {(pedido.unidades?.length ?? 0) === 1
-            ? "Esta é a única cesta do pedido. Ao confirmar, uma mensagem curta de cancelamento será copiada e o grupo do WhatsApp será aberto."
-            : "Todas as cestas deste pedido serão canceladas e uma mensagem será copiada para o grupo."}
+            ? "Esta é a única cesta do pedido. Ao confirmar, o pedido será cancelado no sistema."
+            : "Todas as cestas deste pedido serão canceladas no sistema."}
         </p>
 
         <label className="mt-4 flex flex-col gap-1.5">

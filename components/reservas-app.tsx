@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react"
 import useSWR from "swr"
-import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { UnidadeCard } from "@/components/unidade-card"
@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
-import { LINK_GRUPO, dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData, type Pedido } from "@/lib/pedidos"
+import { dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData, type Pedido } from "@/lib/pedidos"
 import { salvarPedido, getMeusPedidos } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -123,21 +123,8 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
     setMostrarErros(false)
     setEnviando(true)
 
-    // 1) Cópia acontece dentro do gesto do usuário (evita bloqueio do navegador)
-    const copiouOk = copiarTexto(mensagem)
-    setCopiado(copiouOk)
-
-    if (copiouOk) {
-      toast.success("Copiado para a área de transferência", {
-        description: "Abrindo o grupo do WhatsApp. É só colar a mensagem.",
-      })
-    } else {
-      toast.error("Não foi possível copiar automaticamente", {
-        description: "Copie a mensagem manualmente antes de enviar no grupo.",
-      })
-    }
-
-    // 2) Salva o pedido para o dashboard de métricas
+    // Envio ao WhatsApp (cópia + redirecionamento) está temporariamente desativado.
+    // O pedido só é salvo no sistema; a mensagem continua sendo gerada para prévia.
     void salvarPedido({
       titulo: saudacao.trim(),
       saudacao: saudacao.trim(),
@@ -146,18 +133,16 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       pousada: pousada.nome,
       dataPedido,
     })
+      .then(() => {
+        setCopiado(true)
+        toast.success("Pedido enviado", { description: "Registrado no sistema." })
+      })
       .catch(() => {
-        toast.error("Não foi possível registrar o pedido nas métricas")
+        toast.error("Não foi possível registrar o pedido")
       })
       .finally(() => {
         setEnviando(false)
       })
-
-    // 3) Pequena pausa e redireciona para o grupo do WhatsApp
-    window.setTimeout(() => {
-      const aba = window.open(LINK_GRUPO, "_blank", "noopener,noreferrer")
-      if (!aba) window.location.href = LINK_GRUPO
-    }, 1200)
   }
 
   return (
@@ -297,8 +282,8 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
               <div className="flex items-start gap-2 text-sm text-muted-foreground">
                 {copiado ? (
                   <>
-                    <Copy className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
-                    <span>Mensagem copiada! Cole no grupo do WhatsApp.</span>
+                    <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                    <span>Pedido enviado e registrado no sistema.</span>
                   </>
                 ) : unidadesInvalidas.length > 0 ? (
                   <>
@@ -326,7 +311,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
                   onClick={handleConcluir}
                   disabled={!podeEnviar || enviando}
                   className="tap min-h-11 flex-1 gap-2 bg-accent text-accent-foreground hover:bg-accent/90 sm:flex-none"
-                  aria-label="Concluir, copiar mensagem e abrir o grupo"
+                  aria-label="Concluir e enviar o pedido"
                 >
                   {copiado ? <Check className="size-4" aria-hidden="true" /> : <Send className="size-4" aria-hidden="true" />}
                   {enviando ? "Enviando..." : "Concluir"}

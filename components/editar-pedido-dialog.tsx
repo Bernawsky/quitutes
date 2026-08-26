@@ -7,9 +7,8 @@ import { Button } from "@/components/ui/button"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { UnidadeCard } from "@/components/unidade-card"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
-import { copiarTexto } from "@/components/reservas-app"
 import { editarPedidoPousada } from "@/lib/pedidos-api"
-import { LINK_GRUPO, gerarMensagemEdicao, type Pedido } from "@/lib/pedidos"
+import type { Pedido } from "@/lib/pedidos"
 import type { Pousada } from "@/lib/pousadas"
 
 export function EditarPedidoDialog({
@@ -43,19 +42,12 @@ export function EditarPedidoDialog({
       return
     }
 
-    // Copia dentro do gesto do usuário
-    copiarTexto(gerarMensagemEdicao(saudacao.trim(), payload))
-
     startTransition(async () => {
       try {
         await editarPedidoPousada({ id: pedido.id, saudacao: saudacao.trim(), unidades: payload })
         onSalvo()
-        toast.success("Pedido atualizado", { description: "Mensagem copiada. Abrindo o grupo do WhatsApp." })
+        toast.success("Pedido atualizado", { description: "Registrado no sistema." })
         onClose()
-        window.setTimeout(() => {
-          const aba = window.open(LINK_GRUPO, "_blank", "noopener,noreferrer")
-          if (!aba) window.location.href = LINK_GRUPO
-        }, 1200)
       } catch (e) {
         toast.error("Não foi possível salvar", { description: e instanceof Error ? e.message : undefined })
       }
@@ -68,7 +60,7 @@ export function EditarPedidoDialog({
         <DialogHeader>
           <DialogTitle>Editar pedido #{pedido.id}</DialogTitle>
           <DialogDescription>
-            As alterações são validadas no servidor e a mensagem atualizada é enviada ao grupo. Unidades que ainda não estão no
+            As alterações são validadas e salvas no servidor. Unidades que ainda não estão no
             pedido aparecem vazias — é só preencher pra incluí-las.
           </DialogDescription>
         </DialogHeader>
@@ -106,7 +98,7 @@ export function EditarPedidoDialog({
           </Button>
           <Button onClick={salvar} disabled={pending} className="tap min-h-11 gap-2">
             <Save className="size-4" aria-hidden="true" />
-            {pending ? "Salvando..." : "Salvar e enviar"}
+            {pending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </DialogContent>
