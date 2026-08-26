@@ -2,10 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { ReactNode } from "react"
-import { Send, Check, MapPin, DoorOpen, User, Phone, MessageSquareText, ChevronDown } from "lucide-react"
+import { Send, Check, MapPin, DoorOpen, User, Phone, MessageSquareText, ChevronDown, Building2 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 
 type PousadaOpcao = { id: string; nome: string; unidades: { nome: string }[] }
 
@@ -31,41 +32,79 @@ function Campo({ label, icon, children }: { label: string; icon: ReactNode; chil
   )
 }
 
-function Select({
+function SeletorLista({
+  rotulo,
+  icone,
   value,
   onChange,
   disabled,
   placeholder,
   opcoes,
 }: {
+  rotulo: string
+  icone: ReactNode
   value: string
   onChange: (v: string) => void
   disabled?: boolean
   placeholder: string
   opcoes: { value: string; label: string }[]
 }) {
+  const [aberto, setAberto] = useState(false)
+  const selecionado = opcoes.find((o) => o.value === value)
+
   return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        disabled={disabled}
-        className={cn(CAMPO, "appearance-none pl-3 pr-9 disabled:cursor-not-allowed disabled:opacity-50", !value && "text-muted-foreground/60")}
-      >
-        <option value="" disabled hidden>
-          {placeholder}
-        </option>
-        {opcoes.map((o) => (
-          <option key={o.value} value={o.value} className="text-foreground">
-            {o.label}
-          </option>
-        ))}
-      </select>
-      <ChevronDown
-        className="pointer-events-none absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground"
-        aria-hidden="true"
+    <Popover open={aberto} onOpenChange={setAberto}>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            disabled={disabled}
+            className={cn(
+              CAMPO,
+              "flex items-center justify-between gap-2 px-3 text-left disabled:cursor-not-allowed disabled:opacity-50",
+              !selecionado && "text-muted-foreground/60",
+            )}
+          >
+            <span className="truncate">{selecionado ? selecionado.label : placeholder}</span>
+            <ChevronDown
+              className={cn("size-4 shrink-0 text-muted-foreground transition-transform", aberto && "rotate-180")}
+              aria-hidden="true"
+            />
+          </button>
+        }
       />
-    </div>
+      <PopoverContent className="w-[var(--anchor-width)] max-w-none p-0" align="start">
+        <p className="px-3.5 pt-3 pb-1.5 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">{rotulo}</p>
+        <ul className="max-h-64 overflow-y-auto p-1.5 pt-0.5">
+          {opcoes.length === 0 && <li className="px-2.5 py-2 text-sm text-muted-foreground">Nenhuma opção disponível</li>}
+          {opcoes.map((o) => (
+            <li key={o.value}>
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(o.value)
+                  setAberto(false)
+                }}
+                className={cn(
+                  "tap flex w-full items-center gap-2.5 rounded-xl px-2.5 py-2.5 text-left text-sm transition-colors hover:bg-muted",
+                  o.value === value ? "font-medium text-primary" : "text-foreground",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex size-6 shrink-0 items-center justify-center",
+                    o.value === value ? "text-primary" : "text-muted-foreground",
+                  )}
+                >
+                  {icone}
+                </span>
+                {o.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -154,7 +193,9 @@ export function FeedbackForm(props: Props) {
         </Campo>
       ) : (
         <Campo label="Pousada" icon={<MapPin className="size-3.5" aria-hidden="true" />}>
-          <Select
+          <SeletorLista
+            rotulo="Pousadas"
+            icone={<Building2 className="size-4" aria-hidden="true" />}
             value={pousadaId}
             onChange={(v) => {
               setPousadaId(v)
@@ -167,7 +208,9 @@ export function FeedbackForm(props: Props) {
       )}
 
       <Campo label="Quarto / Chalé" icon={<DoorOpen className="size-3.5" aria-hidden="true" />}>
-        <Select
+        <SeletorLista
+          rotulo="Quartos / Chalés"
+          icone={<DoorOpen className="size-4" aria-hidden="true" />}
           value={unidade}
           onChange={setUnidade}
           disabled={!token && !pousadaId}
