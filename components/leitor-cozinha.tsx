@@ -18,7 +18,7 @@ import {
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
-import { getPedidosPorData } from "@/lib/pedidos-api"
+import { getPedidosPorData, getDatasComPedidosCesta } from "@/lib/pedidos-api"
 import { HORARIOS, normalizarHorario, decomporCestas, somarCestas, rotuloData, amanhaISO, type ContagemCestas } from "@/lib/pedidos"
 
 function rotuloCestas(c: ContagemCestas): string[] {
@@ -32,6 +32,7 @@ function rotuloCestas(c: ContagemCestas): string[] {
 export function LeitorCozinha() {
   const [data, setData] = useState(amanhaISO())
   const { data: pedidos = [], isLoading } = useSWR(["leitor-pedidos", data], () => getPedidosPorData(data))
+  const { data: datasComPedido = [] } = useSWR("leitor-datas-com-pedido", getDatasComPedidosCesta)
 
   const porHorario = useMemo(() => {
     const grupos = new Map<string, Map<string, ContagemCestas>>()
@@ -94,7 +95,7 @@ export function LeitorCozinha() {
               }
             />
             <PopoverContent className="w-auto">
-              <Calendario valor={data} onSelecionar={setData} />
+              <Calendario valor={data} onSelecionar={setData} datasComPedido={datasComPedido} />
             </PopoverContent>
           </Popover>
           <Button onClick={() => window.print()} className="tap gap-2">

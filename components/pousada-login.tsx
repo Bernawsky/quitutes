@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat } from "lucide-react"
+import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -40,13 +40,23 @@ const ADMINS = [
   },
 ] as const
 
-/** Equipe interna sem conta de pousada (ex: cozinha), acessa só a lista de preparo em /leitor. */
+/** Equipe interna sem conta de pousada (cozinha, cafeteria) — cada uma acessa só a própria tela. */
 const EQUIPE = [
   {
     valor: "equipe:cozinha",
     nome: "Equipe da Cozinha",
     papel: "Cozinha",
     email: "cozinha@equipe.quitutes.internal",
+    rota: "/leitor",
+    icone: ChefHat,
+  },
+  {
+    valor: "equipe:cafeteria",
+    nome: "Equipe da Cafeteria",
+    papel: "Cafeteria",
+    email: "cafeteria@equipe.quitutes.internal",
+    rota: "/vouchers",
+    icone: UtensilsCrossed,
   },
 ] as const
 
@@ -99,7 +109,7 @@ export function PousadaLogin({ pousadaFixa }: Props) {
         return
       }
       toast.success(`Bem-vindo, ${equipe.nome}!`)
-      router.push("/leitor")
+      router.push(equipe.rota)
       return
     }
 
@@ -171,7 +181,7 @@ export function PousadaLogin({ pousadaFixa }: Props) {
                   <SelectLabel className="text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">Equipe</SelectLabel>
                   {EQUIPE.map((e) => (
                     <SelectItem key={e.valor} value={e.valor} className="rounded-lg py-2.5">
-                      <ChefHat className="size-4 text-accent-foreground" aria-hidden="true" />
+                      <e.icone className="size-4 text-accent-foreground" aria-hidden="true" />
                       <span className="font-medium">{e.nome}</span>
                       <span className="ml-1 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-semibold text-secondary-foreground">
                         {e.papel}

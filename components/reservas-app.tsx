@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import useSWR from "swr"
 import { ShoppingBasket, Send, MessageCircle, Copy, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -12,8 +13,8 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
 import { useUnidadesPedido } from "@/hooks/use-unidades-pedido"
-import { LINK_GRUPO, dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData } from "@/lib/pedidos"
-import { salvarPedido } from "@/lib/pedidos-api"
+import { LINK_GRUPO, dataSaudacaoPara, gerarMensagem, hojeISO, amanhaISO, rotuloData, type Pedido } from "@/lib/pedidos"
+import { salvarPedido, getMeusPedidos } from "@/lib/pedidos-api"
 import type { Pousada } from "@/lib/pousadas"
 
 /**
@@ -65,6 +66,11 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
     ...(temBuffet ? [{ key: "buffet" as const, label: "Buffet", icone: UtensilsCrossed }] : []),
   ]
   const indiceAba = Math.max(0, abas.findIndex((a) => a.key === aba))
+  const { data: meusPedidos = [] } = useSWR<Pedido[]>(["meus-pedidos", pousada.id], () => getMeusPedidos(pousada.id))
+  const datasComPedido = useMemo(
+    () => meusPedidos.filter((p) => p.status !== "cancelado").map((p) => p.data_pedido),
+    [meusPedidos],
+  )
   const [saudacao, setSaudacao] = useState(dataSaudacaoPara(amanhaISO()))
   const [saudacaoEditada, setSaudacaoEditada] = useState(false)
   const [dataPedido, setDataPedido] = useState(amanhaISO())
@@ -251,6 +257,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
                         valor={dataPedido}
                         minimo={hojeISO()}
                         onSelecionar={mudarDataPedido}
+                        datasComPedido={datasComPedido}
                       />
                     </PopoverContent>
                   </Popover>

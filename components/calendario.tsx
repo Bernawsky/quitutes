@@ -29,10 +29,13 @@ type CalendarioProps = {
   maximo?: string
   /** Quando true, só permite escolher fins de semana e feriados nacionais (ex: dias de Buffet). */
   somenteDiasBuffet?: boolean
+  /** Datas (yyyy-mm-dd) que já têm pedido — pintam a bolinha do dia (verde no passado, amarelo no futuro). */
+  datasComPedido?: Iterable<string>
 }
 
 /** Calendário mensal no estilo do app Calendário do iPhone: grade de dias, hoje marcado, dia selecionado em círculo cheio. */
-export function Calendario({ valor, onSelecionar, minimo, maximo, somenteDiasBuffet }: CalendarioProps) {
+export function Calendario({ valor, onSelecionar, minimo, maximo, somenteDiasBuffet, datasComPedido }: CalendarioProps) {
+  const comPedido = new Set(datasComPedido ?? [])
   const hojeISO = paraISO(new Date())
   const [mesVisivel, setMesVisivel] = useState(() => {
     const base = valor ? deISO(valor) : new Date()
@@ -87,35 +90,38 @@ export function Calendario({ valor, onSelecionar, minimo, maximo, somenteDiasBuf
           const selecionado = iso === valor
           const feriado = nomeFeriado(iso)
           const fimDeSemana = isFimDeSemana(iso)
+          const diaEspecial = Boolean(feriado || fimDeSemana)
+          const temPedido = comPedido.has(iso)
+          const pedidoPassado = temPedido && iso < hojeISO
+          const pedidoFuturo = temPedido && iso >= hojeISO
           const foraDoIntervalo = (minimo && iso < minimo) || (maximo && iso > maximo)
           const desabilitado = foraDoIntervalo || (somenteDiasBuffet && !feriado && !fimDeSemana)
 
           return (
-            <div key={iso} className="relative mx-auto flex flex-col items-center">
-              <button
-                type="button"
-                disabled={Boolean(desabilitado)}
-                onClick={() => onSelecionar(iso)}
-                title={feriado ?? undefined}
-                className={cn(
-                  "tap flex size-9 items-center justify-center rounded-full text-sm transition-colors",
-                  selecionado
-                    ? "bg-primary font-semibold text-primary-foreground"
-                    : hoje
-                      ? "font-semibold text-primary ring-1 ring-primary/50"
-                      : "text-foreground hover:bg-muted",
-                  desabilitado && "pointer-events-none text-muted-foreground/30",
-                )}
-              >
-                {dia}
-              </button>
-              {(feriado || fimDeSemana) && !selecionado && (
-                <span
-                  className={cn("absolute bottom-0.5 size-1 rounded-full", feriado ? "bg-accent" : "bg-muted-foreground/40")}
-                  aria-hidden="true"
-                />
+            <button
+              key={iso}
+              type="button"
+              disabled={Boolean(desabilitado)}
+              onClick={() => onSelecionar(iso)}
+              title={feriado ?? undefined}
+              className={cn(
+                "tap mx-auto flex size-9 items-center justify-center rounded-full text-sm transition-colors",
+                selecionado
+                  ? "bg-primary font-semibold text-primary-foreground"
+                  : pedidoPassado
+                    ? "bg-green-100 text-green-900 hover:bg-green-200"
+                    : pedidoFuturo
+                      ? "bg-yellow-100 text-yellow-900 hover:bg-yellow-200"
+                      : hoje
+                        ? "text-primary hover:bg-muted"
+                        : "text-foreground hover:bg-muted",
+                !selecionado && hoje && "font-semibold ring-1 ring-primary/50",
+                !selecionado && !hoje && diaEspecial && "ring-1 ring-sky-300",
+                desabilitado && "pointer-events-none text-muted-foreground/30",
               )}
-            </div>
+            >
+              {dia}
+            </button>
           )
         })}
       </div>

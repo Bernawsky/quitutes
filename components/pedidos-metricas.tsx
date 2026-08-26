@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Search, Clock, ChevronDown, Ban, CalendarDays, UtensilsCrossed } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -14,7 +14,8 @@ export function PedidosMetricas() {
   const [busca, setBusca] = useState("")
   const [dataExata, setDataExata] = useState("")
   const [expandido, setExpandido] = useState<number | null>(null)
-  const { filtrados, isLoading } = useDadosMetricas({ busca, dataExata })
+  const { pedidos, filtrados, isLoading } = useDadosMetricas({ busca, dataExata })
+  const datasComPedido = useMemo(() => pedidos.filter((p) => p.status !== "cancelado").map((p) => p.data_pedido), [pedidos])
 
   return (
     <div className="flex flex-col gap-4">
@@ -39,7 +40,7 @@ export function PedidosMetricas() {
             }
           />
           <PopoverContent className="w-auto">
-            <Calendario valor={dataExata} onSelecionar={setDataExata} />
+            <Calendario valor={dataExata} onSelecionar={setDataExata} datasComPedido={datasComPedido} />
           </PopoverContent>
         </Popover>
         {(busca || dataExata) && (

@@ -1,6 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
+import useSWR from "swr"
 import { UtensilsCrossed, Users, UserRound, CalendarDays, Printer, Plus, Minus, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -8,12 +9,17 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 import { Calendario } from "@/components/calendario"
 import { VoucherBuffet } from "@/components/voucher-buffet"
 import { getBuffetAtivo } from "@/app/actions/buffet"
-import { salvarPedidoBuffet } from "@/lib/pedidos-api"
+import { salvarPedidoBuffet, getPedidosBuffet } from "@/lib/pedidos-api"
 import { hojeISO, rotuloData } from "@/lib/pedidos"
 import type { Pousada } from "@/lib/pousadas"
 
 export function BuffetForm({ pousada }: { pousada: Pousada }) {
   const [ativo, setAtivo] = useState<boolean | null>(null)
+  const { data: meusVouchers = [] } = useSWR(["buffet-vouchers-mine", pousada.id], () => getPedidosBuffet())
+  const datasComPedido = useMemo(
+    () => meusVouchers.filter((p) => p.status !== "cancelado").map((p) => p.data_pedido),
+    [meusVouchers],
+  )
   const [pessoas, setPessoas] = useState(1)
   const [hospede, setHospede] = useState("")
   const [data, setData] = useState(hojeISO())
@@ -155,7 +161,7 @@ export function BuffetForm({ pousada }: { pousada: Pousada }) {
             }
           />
           <PopoverContent className="w-auto">
-            <Calendario valor={data} minimo={hojeISO()} onSelecionar={setData} somenteDiasBuffet />
+            <Calendario valor={data} minimo={hojeISO()} onSelecionar={setData} somenteDiasBuffet datasComPedido={datasComPedido} />
           </PopoverContent>
         </Popover>
       </div>

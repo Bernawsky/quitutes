@@ -58,6 +58,22 @@ export async function salvarPedidoBuffet(input: {
   if (error) throw error
 }
 
+/** Datas (yyyy-mm-dd) com pedido de cesta ativo, últimos 60 dias em diante — usado para pintar o calendário. */
+export async function getDatasComPedidosCesta(): Promise<string[]> {
+  const inicio = new Date()
+  inicio.setDate(inicio.getDate() - 60)
+  const inicioISO = `${inicio.getFullYear()}-${String(inicio.getMonth() + 1).padStart(2, "0")}-${String(inicio.getDate()).padStart(2, "0")}`
+
+  const { data, error } = await supabase
+    .from("pedidos")
+    .select("data_pedido")
+    .eq("tipo", "cesta")
+    .eq("status", "ativo")
+    .gte("data_pedido", inicioISO)
+  if (error) throw error
+  return Array.from(new Set((data ?? []).map((d) => d.data_pedido)))
+}
+
 /** Vouchers de Buffet (RLS: admins veem todos). Sem data, traz os mais recentes primeiro. */
 export async function getPedidosBuffet(dataISO?: string): Promise<Pedido[]> {
   let query = supabase.from("pedidos").select(COLUNAS).eq("tipo", "buffet")
