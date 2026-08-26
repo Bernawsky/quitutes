@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
 import { AvisosBell } from "@/components/avisos-bell"
+import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
 import { getPedidosPorData, getDatasComPedidosCesta } from "@/lib/pedidos-api"
 import { HORARIOS, normalizarHorario, decomporCestas, somarCestas, rotuloData, amanhaISO, type ContagemCestas } from "@/lib/pedidos"
 
@@ -108,6 +109,9 @@ export function LeitorCozinha() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6">
+        <div className="print:hidden">
+          <AvisoPushDesativado />
+        </div>
         <p className="mb-4 hidden font-heading text-lg font-bold text-foreground print:block">
           Lista de preparo — {rotuloData(data)}
         </p>

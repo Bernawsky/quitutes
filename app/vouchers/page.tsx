@@ -3,6 +3,7 @@ import { UtensilsCrossed } from "lucide-react"
 import { exigirEquipeServer } from "@/lib/supabase/server"
 import { ListaVouchersBuffet } from "@/components/lista-vouchers-buffet"
 import { AvisosBell } from "@/components/avisos-bell"
+import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
 
 export const dynamic = "force-dynamic"
 
@@ -30,6 +31,7 @@ export default async function VouchersPage() {
       </header>
 
       <main className="mx-auto max-w-3xl px-4 py-6">
+        <AvisoPushDesativado />
         <ListaVouchersBuffet />
       </main>
     </div>

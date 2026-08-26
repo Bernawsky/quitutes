@@ -7,6 +7,7 @@ import { ArrowLeft, Settings, LogOut, X, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { FiltroMetricas } from "@/components/filtro-metricas"
 import { AvisosBell } from "@/components/avisos-bell"
+import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
 import { useAuth } from "@/hooks/use-auth"
 import { useFiltrosMetricas } from "@/hooks/use-filtros-metricas"
 import { useDadosMetricas, useRealtimePedidos } from "@/hooks/use-dados-metricas"
@@ -99,6 +100,7 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-5">
+        <AvisoPushDesativado />
         {pendencias.length > 0 && !pendenciasFechadas && (
           <div className="mb-5 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />

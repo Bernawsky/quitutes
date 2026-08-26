@@ -11,6 +11,15 @@ function paraUint8Array(base64: string): Uint8Array {
 
 export type EstadoPush = "indisponivel" | "negado" | "inativo" | "ativo"
 
+function detectarIosNaoInstalado(): boolean {
+  if (typeof navigator === "undefined") return false
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent)
+  if (!ios) return false
+  const standalone =
+    window.matchMedia?.("(display-mode: standalone)").matches || (navigator as unknown as { standalone?: boolean }).standalone === true
+  return !standalone
+}
+
 /**
  * Notificações push do navegador (Web Push) — funcionam em Chrome, Edge, Firefox
  * e Safari (macOS 16+ e iOS/iPadOS 16.4+, este último só com o site instalado
@@ -19,6 +28,7 @@ export type EstadoPush = "indisponivel" | "negado" | "inativo" | "ativo"
 export function usePushNotifications() {
   const [estado, setEstado] = useState<EstadoPush>("inativo")
   const [carregando, setCarregando] = useState(false)
+  const [iosNaoInstalado] = useState(detectarIosNaoInstalado)
 
   useEffect(() => {
     void (async () => {
@@ -89,5 +99,5 @@ export function usePushNotifications() {
     }
   }, [])
 
-  return { estado, carregando, ativar, desativar }
+  return { estado, carregando, ativar, desativar, iosNaoInstalado }
 }

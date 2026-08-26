@@ -58,9 +58,12 @@ export async function POST(request: Request) {
   const mensagem = mensagens[tipo]
 
   const admin = createAdminSupabaseClient()
-  await admin.from("eventos").insert({ tipo, pedido_id: pedido.id, pousada: nome, mensagem })
-
-  await enviarPushEquipe({ titulo: TITULOS[tipo], corpo: mensagem, url: tipo === "buffet_novo" ? "/vouchers" : "/metricas/pedidos" })
+  // Registro do evento (para o sino de Avisos) e envio do push rodam em paralelo —
+  // um não depende do outro, então não faz sentido esperar um pra começar o outro.
+  await Promise.all([
+    admin.from("eventos").insert({ tipo, pedido_id: pedido.id, pousada: nome, mensagem }),
+    enviarPushEquipe({ titulo: TITULOS[tipo], corpo: mensagem, url: tipo === "buffet_novo" ? "/vouchers" : "/metricas/pedidos" }),
+  ])
 
   return NextResponse.json({ ok: true })
 }
