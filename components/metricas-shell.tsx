@@ -102,17 +102,17 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
       <main className="mx-auto max-w-5xl px-4 py-5">
         <AvisoPushDesativado />
         {pendencias.length > 0 && !pendenciasFechadas && (
-          <div className="mb-5 flex items-start gap-2 rounded-2xl border border-destructive/40 bg-destructive/10 p-3.5 text-sm text-destructive">
+          <div className="mb-5 flex items-start gap-2 rounded-2xl border border-yellow-300 bg-yellow-100 p-3.5 text-sm text-yellow-900">
             <AlertTriangle className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
             <div className="flex-1">
               <p className="font-medium">Pousadas sem pedido hoje ({pendencias.length})</p>
-              <p className="mt-0.5 text-destructive/80">{pendencias.map((p) => p.nome).join(", ")}</p>
+              <p className="mt-0.5 text-yellow-900/80">{pendencias.map((p) => p.nome).join(", ")}</p>
             </div>
             <button
               type="button"
               onClick={() => setPendenciasFechadas(true)}
               aria-label="Fechar aviso de pendências"
-              className="tap flex size-6 shrink-0 items-center justify-center rounded-md text-destructive/70 transition-colors hover:bg-destructive/10 hover:text-destructive"
+              className="tap flex size-6 shrink-0 items-center justify-center rounded-md text-yellow-900/70 transition-colors hover:bg-yellow-200 hover:text-yellow-900"
             >
               <X className="size-4" aria-hidden="true" />
             </button>
