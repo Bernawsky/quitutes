@@ -19,6 +19,20 @@ export const metadata: Metadata = {
   title: TITULO_PADRAO,
   description: DESCRICAO_PADRAO,
   generator: 'v0.app',
+  // Sem isso, "Adicionar à Tela de Início" no iPhone criava só um atalho — a página abria
+  // dentro do Safari em vez de rodar como app instalado, e o iOS só libera a Push API
+  // (Notification/PushManager) para um app de verdade instalado assim.
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Quitutes',
+  },
+  // Next só gera a meta tag "mobile-web-app-capable" (padrão mais novo). O iOS mais antigo
+  // (16.4 a 17.3) só reconhece a versão com o prefixo "apple-", então mantemos as duas.
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+  },
   icons: {
     icon: [
       {
