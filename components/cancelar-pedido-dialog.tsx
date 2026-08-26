@@ -31,7 +31,7 @@ export function CancelarPedidoDialog({
         void fetch("/api/notificar/cancelamento", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ pedidoId: pedido.id, pousada: pedido.pousada, motivo: motivo.trim() }),
+          body: JSON.stringify({ pedidoId: pedido.id }),
         }).catch(() => {})
         toast.success("Pedido cancelado", { description: "Mensagem copiada. Abrindo o grupo do WhatsApp." })
         onClose()
