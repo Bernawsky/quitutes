@@ -15,3 +15,6 @@ node_modules
 .DS_Store
 tsconfig.tsbuildinfo
 next-env.d.ts
+
+# Ambientes Python isolados (ex: docs/security-audit/.venv) usados só pra gerar relatórios locais
+.venv/
