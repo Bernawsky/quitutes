@@ -3,10 +3,20 @@
 import { useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ArrowLeft, FileDown, History, ChevronDown } from "lucide-react"
-import { getProducoesConcluidas, type ProducaoConcluida } from "@/lib/producao-api"
+import { ArrowLeft, FileDown, History, ChevronDown, Pencil, Trash2, Save, X } from "lucide-react"
+import { getProducoesConcluidas, atualizarProducaoConcluida, excluirProducao, type ProducaoConcluida } from "@/lib/producao-api"
 import { exportarProducaoPDF } from "@/lib/export-producao"
-import { agruparPorTipo, calcularBatidas, calcularIngredientes, calcularLatas, formatarDiaProducao, formatarPeso, RECEITAS } from "@/lib/producao"
+import {
+  agruparPorTipo,
+  calcularBatidas,
+  calcularIngredientes,
+  calcularLatas,
+  formatarDiaProducao,
+  formatarPeso,
+  RECEITAS,
+  type DiaProducao,
+} from "@/lib/producao"
+import { CardDia } from "@/components/producao-calculadora"
 import { cn } from "@/lib/utils"
 
 function rotuloPeriodo(producao: ProducaoConcluida): string {
@@ -67,15 +77,57 @@ function DetalheProducao({ producao }: { producao: ProducaoConcluida }) {
   )
 }
 
-function ItemHistorico({ producao }: { producao: ProducaoConcluida }) {
+function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onMudou: () => void }) {
   const [aberto, setAberto] = useState(false)
+  const [editando, setEditando] = useState(false)
+  const [diasEditados, setDiasEditados] = useState<DiaProducao[]>(producao.dias)
+  const [salvando, setSalvando] = useState(false)
+  const [excluindo, setExcluindo] = useState(false)
+
+  function iniciarEdicao() {
+    setDiasEditados(producao.dias)
+    setEditando(true)
+    setAberto(true)
+  }
+
+  function cancelarEdicao() {
+    setEditando(false)
+  }
+
+  async function salvarEdicao() {
+    setSalvando(true)
+    try {
+      await atualizarProducaoConcluida(producao.id, diasEditados)
+      setEditando(false)
+      onMudou()
+    } catch {
+      window.alert("Não foi possível salvar as alterações agora. Verifique a conexão e tente de novo.")
+    } finally {
+      setSalvando(false)
+    }
+  }
+
+  async function excluir() {
+    if (!window.confirm("Excluir essa produção do histórico? Não tem como desfazer.")) return
+    setExcluindo(true)
+    try {
+      await excluirProducao(producao.id)
+      onMudou()
+    } catch {
+      window.alert("Não foi possível excluir agora. Verifique a conexão e tente de novo.")
+      setExcluindo(false)
+    }
+  }
+
+  const atualizarDiaEditado = (dia: DiaProducao) => setDiasEditados((atual) => atual.map((d) => (d.id === dia.id ? dia : d)))
+  const removerDiaEditado = (id: string) => setDiasEditados((atual) => atual.filter((d) => d.id !== id))
 
   return (
     <div className="rounded-2xl border border-border bg-card p-5">
       <div className="flex items-center gap-3">
         <button
           type="button"
-          onClick={() => setAberto((a) => !a)}
+          onClick={() => !editando && setAberto((a) => !a)}
           className="tap flex min-w-0 flex-1 items-center gap-2 text-left"
         >
           <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", aberto && "rotate-180")} aria-hidden="true" />
@@ -86,22 +138,73 @@ function ItemHistorico({ producao }: { producao: ProducaoConcluida }) {
             </p>
           </div>
         </button>
-        <button
-          type="button"
-          onClick={() => exportarProducaoPDF(producao.dias, { titulo: `Produção — ${rotuloPeriodo(producao)}` })}
-          className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
-        >
-          <FileDown className="size-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">Gerar PDF</span>
-        </button>
+        {editando ? (
+          <>
+            <button
+              type="button"
+              onClick={cancelarEdicao}
+              disabled={salvando}
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50 disabled:opacity-50"
+            >
+              <X className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Cancelar</span>
+            </button>
+            <button
+              type="button"
+              onClick={salvarEdicao}
+              disabled={salvando}
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              <Save className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">{salvando ? "Salvando…" : "Salvar"}</span>
+            </button>
+          </>
+        ) : (
+          <>
+            <button
+              type="button"
+              onClick={() => exportarProducaoPDF(producao.dias, { titulo: `Produção — ${rotuloPeriodo(producao)}` })}
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
+            >
+              <FileDown className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Gerar PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={iniciarEdicao}
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
+            >
+              <Pencil className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">Editar</span>
+            </button>
+            <button
+              type="button"
+              onClick={excluir}
+              disabled={excluindo}
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:border-destructive/50 hover:bg-destructive/10 disabled:opacity-50"
+            >
+              <Trash2 className="size-3.5" aria-hidden="true" />
+              <span className="hidden sm:inline">{excluindo ? "Excluindo…" : "Excluir"}</span>
+            </button>
+          </>
+        )}
       </div>
-      {aberto && <DetalheProducao producao={producao} />}
+
+      {editando ? (
+        <div className="mt-3 flex flex-col gap-4 border-t border-border/60 pt-3">
+          {diasEditados.map((dia) => (
+            <CardDia key={dia.id} dia={dia} onChange={atualizarDiaEditado} onRemover={() => removerDiaEditado(dia.id)} />
+          ))}
+        </div>
+      ) : (
+        aberto && <DetalheProducao producao={producao} />
+      )}
     </div>
   )
 }
 
 export function ProducaoHistorico() {
-  const { data: producoes = [], isLoading } = useSWR("producoes-concluidas", getProducoesConcluidas)
+  const { data: producoes = [], isLoading, mutate } = useSWR("producoes-concluidas", getProducoesConcluidas)
 
   return (
     <div className="min-h-svh bg-background pb-16">
@@ -138,7 +241,7 @@ export function ProducaoHistorico() {
         ) : (
           <div className="flex flex-col gap-3">
             {producoes.map((p) => (
-              <ItemHistorico key={p.id} producao={p} />
+              <ItemHistorico key={p.id} producao={p} onMudou={() => mutate()} />
             ))}
           </div>
         )}

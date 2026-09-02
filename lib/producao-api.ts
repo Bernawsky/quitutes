@@ -52,3 +52,15 @@ export async function getProducoesConcluidas(): Promise<ProducaoConcluida[]> {
   if (error) throw error
   return (data ?? []) as unknown as ProducaoConcluida[]
 }
+
+/** Edita uma produção já concluída (corrigir um erro de digitação depois do fato, por exemplo). */
+export async function atualizarProducaoConcluida(id: string, dias: DiaProducao[]): Promise<void> {
+  const { error } = await supabase.from("producoes").update({ dias: dias as unknown as never }).eq("id", id)
+  if (error) throw error
+}
+
+/** Exclui uma produção do histórico definitivamente. */
+export async function excluirProducao(id: string): Promise<void> {
+  const { error } = await supabase.from("producoes").delete().eq("id", id)
+  if (error) throw error
+}

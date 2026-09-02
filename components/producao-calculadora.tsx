@@ -179,7 +179,7 @@ function LinhaItem({
   )
 }
 
-function CardDia({
+export function CardDia({
   dia,
   onChange,
   onRemover,
