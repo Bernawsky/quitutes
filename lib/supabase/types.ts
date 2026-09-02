@@ -169,6 +169,26 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["eventos"]["Insert"]>
         Relationships: []
       }
+      producoes: {
+        Row: {
+          id: string
+          dias: Json
+          status: "rascunho" | "concluido"
+          criado_em: string
+          concluido_em: string | null
+          criado_por: string | null
+        }
+        Insert: {
+          id?: string
+          dias?: Json
+          status?: "rascunho" | "concluido"
+          criado_em?: string
+          concluido_em?: string | null
+          criado_por?: string | null
+        }
+        Update: Partial<Database["public"]["Tables"]["producoes"]["Insert"]>
+        Relationships: []
+      }
       metricas_exportadas: {
         Row: {
           id: number

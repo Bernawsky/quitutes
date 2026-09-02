@@ -95,6 +95,29 @@ export function calcularLatas(item: ItemProducao): number {
   return Math.ceil(item.unidades / unidadesPorAssadeira(item.pesoUnidadeG))
 }
 
+/**
+ * Catálogo fixo de pães — cada um já vem com a massa correta e o peso padrão da unidade, então a
+ * pessoa só escolhe o pão (não precisa mais digitar sabor nem escolher a massa manualmente).
+ * Pra adicionar um pão ou uma massa nova, é só acrescentar uma linha aqui.
+ */
+export type Pao = { nome: string; tipo: TipoMassa; pesoUnidadeG: number }
+
+export const PAES: Pao[] = [
+  { nome: "Pão de Canela Grande", tipo: "massa_doce", pesoUnidadeG: 170 },
+  { nome: "Pão de Canela Pequeno", tipo: "massa_doce", pesoUnidadeG: 85 },
+  { nome: "Pão de Chocolate", tipo: "massa_doce", pesoUnidadeG: 170 },
+  { nome: "Pão de Chocolate com Café", tipo: "massa_doce", pesoUnidadeG: 170 },
+  { nome: "Pão de Pizza", tipo: "massa_doce", pesoUnidadeG: 300 },
+  { nome: "Pão Doce de Leite", tipo: "massa_doce", pesoUnidadeG: 85 },
+  { nome: "Pão de Queijo e Orégano", tipo: "massa_doce", pesoUnidadeG: 85 },
+  { nome: "Pão de Goiabada e Queijo", tipo: "massa_doce", pesoUnidadeG: 85 },
+  { nome: "Pão de Abóbora", tipo: "pao_abobora", pesoUnidadeG: 30 },
+]
+
+export function buscarPao(nome: string): Pao {
+  return PAES.find((p) => p.nome === nome) ?? PAES[0]
+}
+
 export type ItemProducao = {
   id: string
   tipo: TipoMassa
@@ -105,7 +128,8 @@ export type ItemProducao = {
 
 export type DiaProducao = {
   id: string
-  nome: string
+  /** Data ISO (yyyy-mm-dd) escolhida no calendário — cada dia de produção é um dia real, não um nome livre. */
+  data: string
   itens: ItemProducao[]
 }
 
@@ -114,45 +138,22 @@ function gerarId(): string {
   return `item-${proximoId++}`
 }
 
-/** Plano de produção real de quarta a sexta, usado como estado inicial da calculadora. */
-export const DIAS_EXEMPLO: DiaProducao[] = [
-  {
-    id: "dia-1",
-    nome: "Quarta-feira",
-    itens: [{ id: gerarId(), tipo: "massa_doce", sabor: "Canela", unidades: 220, pesoUnidadeG: 170 }],
-  },
-  {
-    id: "dia-2",
-    nome: "Quinta-feira",
-    itens: [
-      { id: gerarId(), tipo: "massa_doce", sabor: "Canela", unidades: 100, pesoUnidadeG: 170 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Chocolate", unidades: 26, pesoUnidadeG: 170 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Chocolate + café", unidades: 26, pesoUnidadeG: 170 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Pizza", unidades: 10, pesoUnidadeG: 300 },
-      { id: gerarId(), tipo: "pao_abobora", sabor: "—", unidades: 264, pesoUnidadeG: 30 },
-    ],
-  },
-  {
-    id: "dia-3",
-    nome: "Sexta-feira",
-    itens: [
-      { id: gerarId(), tipo: "massa_doce", sabor: "Canela", unidades: 80, pesoUnidadeG: 170 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Pizza", unidades: 10, pesoUnidadeG: 300 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Doce de leite", unidades: 26, pesoUnidadeG: 85 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Queijo e orégano", unidades: 20, pesoUnidadeG: 85 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Goiabada e queijo", unidades: 40, pesoUnidadeG: 85 },
-      { id: gerarId(), tipo: "massa_doce", sabor: "Canela", unidades: 40, pesoUnidadeG: 85 },
-      { id: gerarId(), tipo: "pao_abobora", sabor: "—", unidades: 462, pesoUnidadeG: 30 },
-    ],
-  },
-]
-
-export function novoItem(): ItemProducao {
-  return { id: gerarId(), tipo: "massa_doce", sabor: "", unidades: 1, pesoUnidadeG: 170 }
+/** Formata a data do dia pra exibição: "Quarta-feira, 14/10". */
+export function formatarDiaProducao(data: string): string {
+  const [ano, mes, dia] = data.split("-").map(Number)
+  const dataLocal = new Date(ano, mes - 1, dia)
+  const diaSemana = dataLocal.toLocaleDateString("pt-BR", { weekday: "long" })
+  const diaSemanaCapitalizado = diaSemana.charAt(0).toUpperCase() + diaSemana.slice(1)
+  return `${diaSemanaCapitalizado}, ${dataLocal.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
 }
 
-export function novoDia(nome: string): DiaProducao {
-  return { id: gerarId(), nome, itens: [novoItem()] }
+export function novoItem(): ItemProducao {
+  const primeiroPao = PAES[0]
+  return { id: gerarId(), tipo: primeiroPao.tipo, sabor: primeiroPao.nome, unidades: 1, pesoUnidadeG: primeiroPao.pesoUnidadeG }
+}
+
+export function novoDia(data: string): DiaProducao {
+  return { id: gerarId(), data, itens: [novoItem()] }
 }
 
 /** Agrupa os itens de um dia por tipo de massa, somando o peso total de cada grupo. */

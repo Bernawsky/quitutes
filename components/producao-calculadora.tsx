@@ -1,18 +1,23 @@
 "use client"
 
-import { useState } from "react"
-import { Wheat, Plus, Minus, Trash2, Printer, Info } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, CheckCircle2, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CalendarioMulti } from "@/components/calendario-multi"
 import { cn } from "@/lib/utils"
+import { getRascunho, salvarRascunho, concluirProducao } from "@/lib/producao-api"
+import { exportarProducaoPDF } from "@/lib/export-producao"
 import {
-  DIAS_EXEMPLO,
+  PAES,
   RECEITAS,
-  TIPOS_MASSA,
   agruparPorTipo,
+  buscarPao,
   calcularBatidas,
   calcularIngredientes,
   calcularLatas,
+  formatarDiaProducao,
   formatarPeso,
   novoDia,
   novoItem,
@@ -33,9 +38,15 @@ function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: num
       >
         <Minus className="size-3.5" aria-hidden="true" />
       </button>
-      <span className="w-10 text-center text-sm font-semibold tabular-nums text-foreground" aria-live="polite">
-        {valor}
-      </span>
+      <input
+        type="number"
+        inputMode="numeric"
+        min={0}
+        value={valor}
+        onChange={(e) => onChange(Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
+        aria-label={rotulo}
+        className="h-8 w-14 rounded-lg border border-input bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+      />
       <button
         type="button"
         onClick={() => onChange(valor + 1)}
@@ -45,6 +56,14 @@ function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: num
         <Plus className="size-3.5" aria-hidden="true" />
       </button>
     </div>
+  )
+}
+
+function BadgeMassa({ tipo }: { tipo: TipoMassa }) {
+  return (
+    <span className="shrink-0 rounded-md bg-accent/40 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-accent-foreground uppercase">
+      {RECEITAS[tipo].nome}
+    </span>
   )
 }
 
@@ -87,9 +106,7 @@ function GrupoDoDia({ tipo, pesoTotalG, itens }: { tipo: TipoMassa; pesoTotalG: 
       <TabelaIngredientes tipo={tipo} pesoG={batidas.pesoPorBatidaG} />
 
       <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 border-t border-border/60 pt-2">
-        <p className="text-xs text-muted-foreground">
-          {itens.map((i) => `${i.unidades}un ${i.sabor !== "—" ? i.sabor : ""} (${i.pesoUnidadeG}g)`.trim()).join(" · ")}
-        </p>
+        <p className="text-xs text-muted-foreground">{itens.map((i) => `${i.unidades}un ${i.sabor}`).join(" · ")}</p>
         <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground">
           {totalLatas} {totalLatas === 1 ? "assadeira" : "assadeiras"}
         </span>
@@ -112,25 +129,26 @@ function LinhaItem({
   return (
     <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2.5 print:hidden">
       <div className="flex items-center gap-2">
-        <Select value={item.tipo} onValueChange={(v) => v && onChange({ ...item, tipo: v as TipoMassa })}>
-          <SelectTrigger className="h-9 w-32 shrink-0 text-xs sm:w-40">
+        <Select
+          value={item.sabor}
+          onValueChange={(v) => {
+            if (!v) return
+            const pao = buscarPao(v)
+            onChange({ ...item, sabor: pao.nome, tipo: pao.tipo, pesoUnidadeG: pao.pesoUnidadeG })
+          }}
+        >
+          <SelectTrigger className="h-9 min-w-0 flex-1 text-xs">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            {TIPOS_MASSA.map((t) => (
-              <SelectItem key={t.valor} value={t.valor}>
-                {t.nome}
+            {PAES.map((p) => (
+              <SelectItem key={p.nome} value={p.nome}>
+                {p.nome}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        <input
-          type="text"
-          value={item.sabor}
-          onChange={(e) => onChange({ ...item, sabor: e.target.value })}
-          placeholder="Sabor"
-          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-        />
+        <BadgeMassa tipo={item.tipo} />
         <button
           type="button"
           onClick={onRemover}
@@ -182,13 +200,7 @@ function CardDia({
   return (
     <section className="rounded-2xl border border-border bg-card p-5 print:border-none print:p-0 print:shadow-none print:break-inside-avoid">
       <div className="mb-4 flex items-center gap-2">
-        <input
-          type="text"
-          value={dia.nome}
-          onChange={(e) => onChange({ ...dia, nome: e.target.value })}
-          className="font-heading min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold text-card-foreground outline-none focus:border-input focus:bg-background focus:px-2 print:hidden"
-        />
-        <p className="hidden font-heading text-base font-semibold text-card-foreground print:block">{dia.nome}</p>
+        <p className="font-heading min-w-0 flex-1 text-base font-semibold text-card-foreground">{formatarDiaProducao(dia.data)}</p>
         <Button variant="ghost" size="sm" onClick={onRemover} className="tap shrink-0 gap-1.5 text-destructive print:hidden">
           <Trash2 className="size-3.5" aria-hidden="true" />
           <span className="hidden sm:inline">Remover dia</span>
@@ -224,33 +236,109 @@ function CardDia({
 }
 
 export function ProducaoCalculadora() {
-  const [dias, setDias] = useState<DiaProducao[]>(DIAS_EXEMPLO)
+  const [dias, setDias] = useState<DiaProducao[]>([])
+  const [carregado, setCarregado] = useState(false)
+  const [salvando, setSalvando] = useState(false)
+  const [calendarioAberto, setCalendarioAberto] = useState(false)
+  const [concluindo, setConcluindo] = useState(false)
+  const timeoutSalvar = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    getRascunho()
+      .then((rascunho) => setDias(rascunho))
+      .catch(() => {})
+      .finally(() => setCarregado(true))
+  }, [])
+
+  useEffect(() => {
+    if (!carregado) return
+    setSalvando(true)
+    if (timeoutSalvar.current) clearTimeout(timeoutSalvar.current)
+    timeoutSalvar.current = setTimeout(() => {
+      salvarRascunho(dias)
+        .catch(() => {})
+        .finally(() => setSalvando(false))
+    }, 800)
+    return () => {
+      if (timeoutSalvar.current) clearTimeout(timeoutSalvar.current)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dias, carregado])
 
   const totaisSemana = agruparPorTipo(dias.flatMap((d) => d.itens))
 
   const atualizarDia = (dia: DiaProducao) => setDias((atual) => atual.map((d) => (d.id === dia.id ? dia : d)))
   const removerDia = (id: string) => setDias((atual) => atual.filter((d) => d.id !== id))
-  const adicionarDia = () => setDias((atual) => [...atual, novoDia(`Dia ${atual.length + 1}`)])
+
+  function aplicarSelecaoDias(datas: string[]) {
+    setDias((atual) => {
+      const existentesPorData = new Map(atual.map((d) => [d.data, d]))
+      return datas.map((data) => existentesPorData.get(data) ?? novoDia(data)).sort((a, b) => a.data.localeCompare(b.data))
+    })
+    setCalendarioAberto(false)
+  }
+
+  async function concluirProducaoAtual() {
+    if (dias.length === 0) return
+    if (!window.confirm("Concluir essa produção? A calculadora vai ser zerada e isso vai pro histórico.")) return
+    setConcluindo(true)
+    try {
+      await concluirProducao(dias)
+      setDias([])
+    } catch {
+      window.alert("Não foi possível concluir a produção agora. Verifique a conexão e tente de novo.")
+    } finally {
+      setConcluindo(false)
+    }
+  }
+
+  function gerarPDF() {
+    if (dias.length === 0) return
+    exportarProducaoPDF(dias)
+  }
 
   return (
     <div className="min-h-svh bg-background pb-16 print:pb-0">
       <header className="border-b border-border bg-card print:hidden">
-        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center">
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-5">
           <div className="flex items-center gap-3">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
               <Wheat className="size-5" aria-hidden="true" />
             </span>
-            <div className="min-w-0">
+            <div className="min-w-0 flex-1">
               <h1 className="font-heading text-xl font-bold text-card-foreground">Planejamento de Produção</h1>
-              <p className="text-sm text-muted-foreground">Divide a produção por dia e calcula os ingredientes da massa base</p>
+              <p className="text-sm text-muted-foreground">
+                Divide a produção por dia e calcula os ingredientes da massa base
+                {salvando && <span className="ml-2 text-xs text-muted-foreground/70">Salvando…</span>}
+              </p>
             </div>
+            <Link
+              href="/producao/historico"
+              className="tap flex shrink-0 items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            >
+              <History className="size-4" aria-hidden="true" />
+              <span className="hidden sm:inline">Histórico</span>
+            </Link>
           </div>
-          <div className="flex gap-2 sm:ml-auto sm:shrink-0">
-            <Button variant="outline" onClick={adicionarDia} className="tap flex-1 gap-2 sm:flex-none">
-              <Plus className="size-4" aria-hidden="true" />
-              Adicionar dia
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
+            <Button variant="outline" onClick={() => setCalendarioAberto(true)} className="tap gap-2">
+              <CalendarPlus className="size-4" aria-hidden="true" />
+              Selecionar dias
             </Button>
-            <Button onClick={() => window.print()} className="tap flex-1 gap-2 sm:flex-none">
+            <Button
+              variant="outline"
+              onClick={concluirProducaoAtual}
+              disabled={dias.length === 0 || concluindo}
+              className="tap gap-2"
+            >
+              <CheckCircle2 className="size-4" aria-hidden="true" />
+              Concluir produção
+            </Button>
+            <Button variant="outline" onClick={gerarPDF} disabled={dias.length === 0} className="tap gap-2">
+              <FileDown className="size-4" aria-hidden="true" />
+              Gerar PDF
+            </Button>
+            <Button onClick={() => window.print()} disabled={dias.length === 0} className="tap gap-2">
               <Printer className="size-4" aria-hidden="true" />
               Imprimir
             </Button>
@@ -258,50 +346,67 @@ export function ProducaoCalculadora() {
         </div>
       </header>
 
+      <CalendarioMulti
+        aberto={calendarioAberto}
+        onFechar={() => setCalendarioAberto(false)}
+        selecionadas={dias.map((d) => d.data)}
+        onConcluir={aplicarSelecaoDias}
+      />
+
       <main className="mx-auto max-w-4xl px-4 py-6">
         <p className="mb-4 hidden font-heading text-lg font-bold text-foreground print:block">Planejamento de Produção</p>
 
-        <div className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900 print:border print:border-border print:bg-transparent print:text-foreground">
-          <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
-          <p>
-            O cálculo cobre só a <b>massa base</b> de cada receita. Ingredientes de recheio/cobertura por sabor (canela,
-            chocolate, doce de leite, queijo, etc.) não entram na conta — as proporções deles não foram informadas.
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-4">
-          {dias.map((dia) => (
-            <CardDia key={dia.id} dia={dia} onChange={atualizarDia} onRemover={() => removerDia(dia.id)} />
-          ))}
-        </div>
-
-        {dias.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center">
+        {!carregado ? (
+          <p className="py-10 text-center text-sm text-muted-foreground">Carregando…</p>
+        ) : dias.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center print:hidden">
             <Wheat className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden="true" />
-            <p className="font-heading text-base font-semibold text-card-foreground">Nenhum dia adicionado</p>
-            <p className="mt-1 text-sm text-muted-foreground">Clique em &quot;Adicionar dia&quot; pra começar o planejamento.</p>
+            <p className="font-heading text-base font-semibold text-card-foreground">Nenhum dia selecionado</p>
+            <p className="mt-1 mb-4 text-sm text-muted-foreground">
+              Selecione pelo menos 1 dia no calendário pra começar o planejamento.
+            </p>
+            <Button onClick={() => setCalendarioAberto(true)} className="tap gap-2">
+              <CalendarPlus className="size-4" aria-hidden="true" />
+              Selecionar dias de produção
+            </Button>
           </div>
-        )}
+        ) : (
+          <>
+            <div className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900 print:border print:border-border print:bg-transparent print:text-foreground">
+              <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+              <p>
+                O cálculo cobre só a <b>massa base</b> de cada receita. Ingredientes de recheio/cobertura por sabor (canela,
+                chocolate, doce de leite, queijo, etc.) não entram na conta — as proporções deles não foram informadas.
+              </p>
+            </div>
 
-        {totaisSemana.length > 0 && (
-          <section className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid print:border-border print:bg-transparent">
-            <h2 className={cn("mb-4 font-heading text-base font-semibold text-card-foreground")}>
-              Total da semana (todos os dias somados)
-            </h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {totaisSemana.map((g) => (
-                <div key={g.tipo} className="rounded-xl border border-border bg-background p-4">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[g.tipo].nome}</h3>
-                    <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-                      {formatarPeso(g.pesoTotalG)}
-                    </span>
-                  </div>
-                  <TabelaIngredientes tipo={g.tipo} pesoG={g.pesoTotalG} />
-                </div>
+            <div className="flex flex-col gap-4">
+              {dias.map((dia) => (
+                <CardDia key={dia.id} dia={dia} onChange={atualizarDia} onRemover={() => removerDia(dia.id)} />
               ))}
             </div>
-          </section>
+
+            {totaisSemana.length > 0 && (
+              <section className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid print:border-border print:bg-transparent">
+                <h2 className={cn("mb-4 font-heading text-base font-semibold text-card-foreground")}>
+                  Total do período (todos os dias somados)
+                </h2>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {totaisSemana.map((g) => (
+                    <div key={g.tipo} className="rounded-xl border border-border bg-background p-4">
+                      <div className="mb-2 flex items-center justify-between">
+                        <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[g.tipo].nome}</h3>
+                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                          {formatarPeso(g.pesoTotalG)}
+                        </span>
+                      </div>
+                      <TabelaIngredientes tipo={g.tipo} pesoG={g.pesoTotalG} />
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+          </>
         )}
       </main>
     </div>
