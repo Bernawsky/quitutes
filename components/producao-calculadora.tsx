@@ -10,7 +10,9 @@ import {
   RECEITAS,
   TIPOS_MASSA,
   agruparPorTipo,
+  calcularBatidas,
   calcularIngredientes,
+  calcularLatas,
   formatarPeso,
   novoDia,
   novoItem,
@@ -46,14 +48,14 @@ function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: num
   )
 }
 
-function TabelaIngredientes({ tipo, pesoTotalG }: { tipo: TipoMassa; pesoTotalG: number }) {
-  const ingredientes = calcularIngredientes(tipo, pesoTotalG)
+function TabelaIngredientes({ tipo, pesoG }: { tipo: TipoMassa; pesoG: number }) {
+  const ingredientes = calcularIngredientes(tipo, pesoG)
   return (
     <ul className="flex flex-col divide-y divide-border/60">
       {ingredientes.map((i) => (
-        <li key={i.chave} className="flex items-center justify-between py-1.5 text-sm">
+        <li key={i.chave} className="flex items-center justify-between gap-2 py-1.5 text-sm">
           <span className="text-foreground">{i.nome}</span>
-          <span className="font-semibold tabular-nums text-foreground">{formatarPeso(i.gramas)}</span>
+          <span className="shrink-0 font-semibold tabular-nums text-foreground">{formatarPeso(i.gramas)}</span>
         </li>
       ))}
     </ul>
@@ -61,18 +63,37 @@ function TabelaIngredientes({ tipo, pesoTotalG }: { tipo: TipoMassa; pesoTotalG:
 }
 
 function GrupoDoDia({ tipo, pesoTotalG, itens }: { tipo: TipoMassa; pesoTotalG: number; itens: ItemProducao[] }) {
+  const batidas = calcularBatidas(pesoTotalG)
+  const totalLatas = itens.reduce((soma, i) => soma + calcularLatas(i), 0)
+
   return (
     <div className="rounded-xl border border-border bg-background p-4 print:border-none print:p-0">
-      <div className="mb-2 flex items-center justify-between">
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5">
         <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[tipo].nome}</h3>
         <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
           {formatarPeso(pesoTotalG)} de massa
         </span>
       </div>
-      <TabelaIngredientes tipo={tipo} pesoTotalG={pesoTotalG} />
-      <p className="mt-2.5 text-xs text-muted-foreground">
-        {itens.map((i) => `${i.unidades}un ${i.sabor !== "—" ? i.sabor : ""} (${i.pesoUnidadeG}g)`.trim()).join(" · ")}
+
+      {batidas.numero > 1 && (
+        <p className="mb-2.5 rounded-lg border border-accent/40 bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent-foreground">
+          Bater {batidas.numero}x na amassadeira · {formatarPeso(batidas.pesoPorBatidaG)} por batida
+        </p>
+      )}
+
+      <p className="mb-1 text-xs font-medium text-muted-foreground">
+        {batidas.numero > 1 ? "Ingredientes por batida" : "Ingredientes"}
       </p>
+      <TabelaIngredientes tipo={tipo} pesoG={batidas.pesoPorBatidaG} />
+
+      <div className="mt-2.5 flex flex-wrap items-center justify-between gap-1.5 border-t border-border/60 pt-2">
+        <p className="text-xs text-muted-foreground">
+          {itens.map((i) => `${i.unidades}un ${i.sabor !== "—" ? i.sabor : ""} (${i.pesoUnidadeG}g)`.trim()).join(" · ")}
+        </p>
+        <span className="shrink-0 rounded-md bg-muted px-1.5 py-0.5 text-xs font-semibold text-foreground">
+          {totalLatas} {totalLatas === 1 ? "assadeira" : "assadeiras"}
+        </span>
+      </div>
     </div>
   )
 }
@@ -86,47 +107,56 @@ function LinhaItem({
   onChange: (item: ItemProducao) => void
   onRemover: () => void
 }) {
+  const latas = calcularLatas(item)
+
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-border bg-background p-2.5 print:hidden">
-      <Select value={item.tipo} onValueChange={(v) => v && onChange({ ...item, tipo: v as TipoMassa })}>
-        <SelectTrigger className="h-9 w-40 text-xs">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          {TIPOS_MASSA.map((t) => (
-            <SelectItem key={t.valor} value={t.valor}>
-              {t.nome}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      <input
-        type="text"
-        value={item.sabor}
-        onChange={(e) => onChange({ ...item, sabor: e.target.value })}
-        placeholder="Sabor"
-        className="h-9 min-w-24 flex-1 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-      />
-      <Stepper valor={item.unidades} onChange={(v) => onChange({ ...item, unidades: v })} rotulo="unidades" />
-      <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        peso un.
+    <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2.5 print:hidden">
+      <div className="flex items-center gap-2">
+        <Select value={item.tipo} onValueChange={(v) => v && onChange({ ...item, tipo: v as TipoMassa })}>
+          <SelectTrigger className="h-9 w-32 shrink-0 text-xs sm:w-40">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {TIPOS_MASSA.map((t) => (
+              <SelectItem key={t.valor} value={t.valor}>
+                {t.nome}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <input
-          type="number"
-          min={1}
-          value={item.pesoUnidadeG}
-          onChange={(e) => onChange({ ...item, pesoUnidadeG: Math.max(1, Number(e.target.value) || 0) })}
-          className="h-9 w-16 rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          type="text"
+          value={item.sabor}
+          onChange={(e) => onChange({ ...item, sabor: e.target.value })}
+          placeholder="Sabor"
+          className="h-9 min-w-0 flex-1 rounded-lg border border-input bg-background px-2.5 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
         />
-        g
-      </label>
-      <button
-        type="button"
-        onClick={onRemover}
-        aria-label="Remover item"
-        className="tap ml-auto flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
-      >
-        <Trash2 className="size-4" aria-hidden="true" />
-      </button>
+        <button
+          type="button"
+          onClick={onRemover}
+          aria-label="Remover item"
+          className="tap flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+        >
+          <Trash2 className="size-4" aria-hidden="true" />
+        </button>
+      </div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+        <Stepper valor={item.unidades} onChange={(v) => onChange({ ...item, unidades: v })} rotulo="unidades" />
+        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          peso un.
+          <input
+            type="number"
+            min={1}
+            value={item.pesoUnidadeG}
+            onChange={(e) => onChange({ ...item, pesoUnidadeG: Math.max(1, Number(e.target.value) || 0) })}
+            className="h-9 w-16 rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          />
+          g
+        </label>
+        <span className="ml-auto rounded-md bg-muted px-1.5 py-1 text-xs font-medium text-muted-foreground">
+          {latas} {latas === 1 ? "assadeira" : "assadeiras"}
+        </span>
+      </div>
     </div>
   )
 }
@@ -159,9 +189,9 @@ function CardDia({
           className="font-heading min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1 text-base font-semibold text-card-foreground outline-none focus:border-input focus:bg-background focus:px-2 print:hidden"
         />
         <p className="hidden font-heading text-base font-semibold text-card-foreground print:block">{dia.nome}</p>
-        <Button variant="ghost" size="sm" onClick={onRemover} className="tap gap-1.5 text-destructive print:hidden">
+        <Button variant="ghost" size="sm" onClick={onRemover} className="tap shrink-0 gap-1.5 text-destructive print:hidden">
           <Trash2 className="size-3.5" aria-hidden="true" />
-          Remover dia
+          <span className="hidden sm:inline">Remover dia</span>
         </Button>
       </div>
 
@@ -205,22 +235,26 @@ export function ProducaoCalculadora() {
   return (
     <div className="min-h-svh bg-background pb-16 print:pb-0">
       <header className="border-b border-border bg-card print:hidden">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center gap-3 px-4 py-5">
-          <span className="flex size-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Wheat className="size-5" aria-hidden="true" />
-          </span>
-          <div className="mr-auto">
-            <h1 className="font-heading text-xl font-bold text-card-foreground">Planejamento de Produção</h1>
-            <p className="text-sm text-muted-foreground">Divide a produção por dia e calcula os ingredientes da massa base</p>
+        <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-5 sm:flex-row sm:items-center">
+          <div className="flex items-center gap-3">
+            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+              <Wheat className="size-5" aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="font-heading text-xl font-bold text-card-foreground">Planejamento de Produção</h1>
+              <p className="text-sm text-muted-foreground">Divide a produção por dia e calcula os ingredientes da massa base</p>
+            </div>
           </div>
-          <Button variant="outline" onClick={adicionarDia} className="tap gap-2">
-            <Plus className="size-4" aria-hidden="true" />
-            Adicionar dia
-          </Button>
-          <Button onClick={() => window.print()} className="tap gap-2">
-            <Printer className="size-4" aria-hidden="true" />
-            Imprimir
-          </Button>
+          <div className="flex gap-2 sm:ml-auto sm:shrink-0">
+            <Button variant="outline" onClick={adicionarDia} className="tap flex-1 gap-2 sm:flex-none">
+              <Plus className="size-4" aria-hidden="true" />
+              Adicionar dia
+            </Button>
+            <Button onClick={() => window.print()} className="tap flex-1 gap-2 sm:flex-none">
+              <Printer className="size-4" aria-hidden="true" />
+              Imprimir
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -263,7 +297,7 @@ export function ProducaoCalculadora() {
                       {formatarPeso(g.pesoTotalG)}
                     </span>
                   </div>
-                  <TabelaIngredientes tipo={g.tipo} pesoTotalG={g.pesoTotalG} />
+                  <TabelaIngredientes tipo={g.tipo} pesoG={g.pesoTotalG} />
                 </div>
               ))}
             </div>

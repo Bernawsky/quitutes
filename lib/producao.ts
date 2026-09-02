@@ -59,6 +59,42 @@ export function formatarPeso(gramas: number): string {
   return `${gramas.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g`
 }
 
+/** Capacidade máxima da amassadeira elétrica — acima disso a massa precisa ser batida em mais de uma vez. */
+export const CAPACIDADE_BATEDEIRA_G = 25_000
+
+/**
+ * Quantas vezes bater essa massa na amassadeira e o peso de cada batida (dividido em
+ * partes iguais, nunca uma batida cheia no limite e outra pequena sobrando).
+ */
+export function calcularBatidas(pesoTotalG: number): { numero: number; pesoPorBatidaG: number } {
+  const numero = Math.max(1, Math.ceil(pesoTotalG / CAPACIDADE_BATEDEIRA_G))
+  return { numero, pesoPorBatidaG: pesoTotalG / numero }
+}
+
+/**
+ * Quantas unidades cabem numa assadeira/lata, por peso de unidade. Os três valores conhecidos
+ * (170g, 300g, 30g) somam ~1,5-1,7kg de massa por assadeira independente do tamanho do pão;
+ * pesos fora dessa lista usam essa média (~1,6kg) como estimativa.
+ */
+const CAPACIDADE_ASSADEIRA_POR_PESO: Record<number, number> = {
+  30: 56,
+  85: 18,
+  170: 10,
+  300: 5,
+}
+const CAPACIDADE_ASSADEIRA_MEDIA_G = 1600
+
+export function unidadesPorAssadeira(pesoUnidadeG: number): number {
+  const conhecida = CAPACIDADE_ASSADEIRA_POR_PESO[pesoUnidadeG]
+  if (conhecida) return conhecida
+  return Math.max(1, Math.floor(CAPACIDADE_ASSADEIRA_MEDIA_G / pesoUnidadeG))
+}
+
+/** Quantas assadeiras/latas esse item precisa (arredondado pra cima). */
+export function calcularLatas(item: ItemProducao): number {
+  return Math.ceil(item.unidades / unidadesPorAssadeira(item.pesoUnidadeG))
+}
+
 export type ItemProducao = {
   id: string
   tipo: TipoMassa
