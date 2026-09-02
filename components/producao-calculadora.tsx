@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, CheckCircle2, History } from "lucide-react"
+import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, Save, Eraser, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarioMulti } from "@/components/calendario-multi"
 import { cn } from "@/lib/utils"
 import { getRascunho, salvarRascunho, concluirProducao } from "@/lib/producao-api"
@@ -42,8 +43,9 @@ function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: num
         type="number"
         inputMode="numeric"
         min={0}
-        value={valor}
+        value={valor === 0 ? "" : valor}
         onChange={(e) => onChange(Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
+        placeholder="0"
         aria-label={rotulo}
         className="h-8 w-14 rounded-lg border border-input bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
       />
@@ -86,7 +88,7 @@ function GrupoDoDia({ tipo, pesoTotalG, itens }: { tipo: TipoMassa; pesoTotalG: 
   const totalLatas = itens.reduce((soma, i) => soma + calcularLatas(i), 0)
 
   return (
-    <div className="rounded-xl border border-border bg-background p-4 print:border-none print:p-0">
+    <div className="rounded-xl border border-border bg-background p-4">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5">
         <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[tipo].nome}</h3>
         <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
@@ -159,15 +161,18 @@ function LinhaItem({
         </button>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-        <Stepper valor={item.unidades} onChange={(v) => onChange({ ...item, unidades: v })} rotulo="unidades" />
-        <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          peso un.
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs font-medium text-muted-foreground">Unidade:</span>
+          <Stepper valor={item.unidades} onChange={(v) => onChange({ ...item, unidades: v })} rotulo="unidades" />
+        </div>
+        <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+          Peso:
           <input
             type="number"
             min={1}
             value={item.pesoUnidadeG}
             onChange={(e) => onChange({ ...item, pesoUnidadeG: Math.max(1, Number(e.target.value) || 0) })}
-            className="h-9 w-16 rounded-lg border border-input bg-background px-2 text-xs text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+            className="h-9 w-16 rounded-lg border border-input bg-background px-2 text-xs font-normal text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
           />
           g
         </label>
@@ -198,7 +203,7 @@ export function CardDia({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 print:border-none print:p-0 print:shadow-none print:break-inside-avoid">
+    <section className="rounded-2xl border border-border bg-card p-5 print:break-inside-avoid">
       <div className="mb-4 flex items-center gap-2">
         <p className="font-heading min-w-0 flex-1 text-base font-semibold text-card-foreground">{formatarDiaProducao(dia.data)}</p>
         <Button variant="ghost" size="sm" onClick={onRemover} className="tap shrink-0 gap-1.5 text-destructive print:hidden">
@@ -240,7 +245,8 @@ export function ProducaoCalculadora() {
   const [carregado, setCarregado] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [calendarioAberto, setCalendarioAberto] = useState(false)
-  const [concluindo, setConcluindo] = useState(false)
+  const [salvandoProducao, setSalvandoProducao] = useState(false)
+  const [popupAberto, setPopupAberto] = useState(false)
   const timeoutSalvar = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -278,23 +284,45 @@ export function ProducaoCalculadora() {
     setCalendarioAberto(false)
   }
 
-  async function concluirProducaoAtual() {
+  function limparTudo() {
     if (dias.length === 0) return
-    if (!window.confirm("Concluir essa produção? A calculadora vai ser zerada e isso vai pro histórico.")) return
-    setConcluindo(true)
+    if (!window.confirm("Limpar tudo? Isso apaga o rascunho atual sem salvar no histórico.")) return
+    setDias([])
+  }
+
+  async function salvar() {
+    if (dias.length === 0) return
+    if (timeoutSalvar.current) clearTimeout(timeoutSalvar.current)
+    setSalvandoProducao(true)
     try {
       await concluirProducao(dias)
-      setDias([])
+      setPopupAberto(true)
     } catch {
-      window.alert("Não foi possível concluir a produção agora. Verifique a conexão e tente de novo.")
+      window.alert("Não foi possível salvar agora. Verifique a conexão e tente de novo.")
     } finally {
-      setConcluindo(false)
+      setSalvandoProducao(false)
     }
   }
 
-  function gerarPDF() {
-    if (dias.length === 0) return
+  function fecharPopup() {
+    setPopupAberto(false)
+    setDias([])
+  }
+
+  function gerarPDFDoPopup() {
     exportarProducaoPDF(dias)
+    setPopupAberto(false)
+    setDias([])
+  }
+
+  function imprimirDoPopup() {
+    setPopupAberto(false)
+    window.print()
+    const aoTerminar = () => {
+      setDias([])
+      window.removeEventListener("afterprint", aoTerminar)
+    }
+    window.addEventListener("afterprint", aoTerminar)
   }
 
   return (
@@ -325,22 +353,13 @@ export function ProducaoCalculadora() {
               <CalendarPlus className="size-4" aria-hidden="true" />
               Selecionar dias
             </Button>
-            <Button
-              variant="outline"
-              onClick={concluirProducaoAtual}
-              disabled={dias.length === 0 || concluindo}
-              className="tap gap-2"
-            >
-              <CheckCircle2 className="size-4" aria-hidden="true" />
-              Concluir produção
+            <Button variant="outline" onClick={limparTudo} disabled={dias.length === 0} className="tap gap-2">
+              <Eraser className="size-4" aria-hidden="true" />
+              Limpar tudo
             </Button>
-            <Button variant="outline" onClick={gerarPDF} disabled={dias.length === 0} className="tap gap-2">
-              <FileDown className="size-4" aria-hidden="true" />
-              Gerar PDF
-            </Button>
-            <Button onClick={() => window.print()} disabled={dias.length === 0} className="tap gap-2">
-              <Printer className="size-4" aria-hidden="true" />
-              Imprimir
+            <Button onClick={salvar} disabled={dias.length === 0 || salvandoProducao} className="tap col-span-2 gap-2 sm:col-span-1">
+              <Save className="size-4" aria-hidden="true" />
+              {salvandoProducao ? "Salvando…" : "Salvar"}
             </Button>
           </div>
         </div>
@@ -352,6 +371,28 @@ export function ProducaoCalculadora() {
         selecionadas={dias.map((d) => d.data)}
         onConcluir={aplicarSelecaoDias}
       />
+
+      <Dialog open={popupAberto} onOpenChange={(aberto) => !aberto && fecharPopup()}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-heading">Produção salva!</DialogTitle>
+            <DialogDescription>O que você quer fazer agora?</DialogDescription>
+          </DialogHeader>
+          <div className="flex flex-col gap-2">
+            <Button onClick={gerarPDFDoPopup} className="tap justify-start gap-2">
+              <FileDown className="size-4" aria-hidden="true" />
+              Gerar PDF
+            </Button>
+            <Button variant="outline" onClick={imprimirDoPopup} className="tap justify-start gap-2">
+              <Printer className="size-4" aria-hidden="true" />
+              Imprimir
+            </Button>
+            <Button variant="ghost" onClick={fecharPopup} className="tap justify-start gap-2">
+              Fechar
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <main className="mx-auto max-w-4xl px-4 py-6">
         <p className="mb-4 hidden font-heading text-lg font-bold text-foreground print:block">Planejamento de Produção</p>
@@ -372,7 +413,7 @@ export function ProducaoCalculadora() {
           </div>
         ) : (
           <>
-            <div className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900 print:border print:border-border print:bg-transparent print:text-foreground">
+            <div className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900">
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <p>
                 O cálculo cobre só a <b>massa base</b> de cada receita. Ingredientes de recheio/cobertura por sabor (canela,
@@ -387,7 +428,7 @@ export function ProducaoCalculadora() {
             </div>
 
             {totaisSemana.length > 0 && (
-              <section className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid print:border-border print:bg-transparent">
+              <section className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid">
                 <h2 className={cn("mb-4 font-heading text-base font-semibold text-card-foreground")}>
                   Total do período (todos os dias somados)
                 </h2>

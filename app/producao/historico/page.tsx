@@ -1,5 +1,5 @@
 import type { Metadata } from "next"
-import { exigirAdminServer } from "@/lib/supabase/server"
+import { exigirEquipeServer } from "@/lib/supabase/server"
 import { ProducaoHistorico } from "@/components/producao-historico"
 
 export const dynamic = "force-dynamic"
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 }
 
 export default async function ProducaoHistoricoPage() {
-  await exigirAdminServer()
+  await exigirEquipeServer()
 
   return <ProducaoHistorico />
 }

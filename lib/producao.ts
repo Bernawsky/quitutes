@@ -51,10 +51,10 @@ export function calcularIngredientes(tipo: TipoMassa, pesoTotalG: number): Ingre
   return RECEITAS[tipo].ingredientes.map((i) => ({ ...i, gramas: i.gramas * escala }))
 }
 
-/** Formata em pt-BR: gramas abaixo de 1kg, quilos (2 casas, vírgula) a partir daí. */
+/** Formata em pt-BR: gramas abaixo de 1kg, quilos (3 casas, vírgula) a partir daí. */
 export function formatarPeso(gramas: number): string {
   if (gramas >= 1000) {
-    return `${(gramas / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg`
+    return `${(gramas / 1000).toLocaleString("pt-BR", { minimumFractionDigits: 3, maximumFractionDigits: 3 })} kg`
   }
   return `${gramas.toLocaleString("pt-BR", { minimumFractionDigits: 1, maximumFractionDigits: 1 })} g`
 }

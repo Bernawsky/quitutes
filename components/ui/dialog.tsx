@@ -14,7 +14,7 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
     <DialogPrimitive.Portal>
       <DialogPrimitive.Backdrop
         className={cn(
-          "fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm transition-opacity duration-200",
+          "fixed inset-0 z-50 bg-foreground/50 backdrop-blur-sm transition-opacity duration-200 print:hidden",
           "data-[ending-style]:opacity-0 data-[starting-style]:opacity-0",
         )}
       />
@@ -22,7 +22,7 @@ function DialogContent({ className, children, ...props }: DialogPrimitive.Popup.
         data-slot="dialog-content"
         className={cn(
           // Mobile: folha que sobe do rodapé, colada nas bordas inferiores (padrão de app).
-          "safe-bottom fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 pt-3 shadow-xl transition-transform duration-300 ease-out",
+          "safe-bottom fixed inset-x-0 bottom-0 z-50 max-h-[85vh] w-full overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 pt-3 shadow-xl transition-transform duration-300 ease-out print:hidden",
           "data-[ending-style]:translate-y-full data-[starting-style]:translate-y-full",
           // A partir de sm: modal centralizado tradicional (limpa left/right/bottom herdados do inset-x-0/bottom-0).
           "sm:top-1/2 sm:right-auto sm:bottom-auto sm:left-1/2 sm:max-h-[90vh] sm:w-auto sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-2xl sm:border sm:pt-5",

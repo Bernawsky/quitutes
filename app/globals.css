@@ -244,3 +244,19 @@ select,
 textarea {
   font-size: 16px !important;
 }
+
+@media print {
+  /* Sem isso o navegador some com fundos/badges coloridos ao imprimir — a impressão fica
+     idêntica à tela em vez de virar preto-e-branco. */
+  * {
+    print-color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+  }
+
+  /* Histórico de produção: o botão "Imprimir" de um item marca ele com [data-imprimir-ativo]
+     antes de chamar window.print() — isso esconde os outros itens da lista, imprimindo só o
+     escolhido em vez da página toda. */
+  body:has([data-imprimir-ativo]) .producao-historico-item:not([data-imprimir-ativo]) {
+    display: none;
+  }
+}

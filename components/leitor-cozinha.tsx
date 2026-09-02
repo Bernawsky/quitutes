@@ -1,6 +1,7 @@
 "use client"
 
 import { useMemo, useState } from "react"
+import Link from "next/link"
 import useSWR from "swr"
 import {
   ChefHat,
@@ -14,6 +15,7 @@ import {
   CakeSlice,
   CalendarDays,
   Printer,
+  Wheat,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -101,6 +103,13 @@ export function LeitorCozinha() {
               <Calendario valor={data} onSelecionar={setData} datasComPedido={datasComPedido} />
             </PopoverContent>
           </Popover>
+          <Link
+            href="/producao"
+            className="tap inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <Wheat className="size-4" aria-hidden="true" />
+            Produção
+          </Link>
           <Button onClick={() => window.print()} className="tap gap-2">
             <Printer className="size-4" aria-hidden="true" />
             Imprimir

@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
-import { ArrowLeft, FileDown, History, ChevronDown, Pencil, Trash2, Save, X } from "lucide-react"
+import { ArrowLeft, FileDown, History, ChevronDown, Pencil, Trash2, Save, X, Printer } from "lucide-react"
 import { getProducoesConcluidas, atualizarProducaoConcluida, excluirProducao, type ProducaoConcluida } from "@/lib/producao-api"
 import { exportarProducaoPDF } from "@/lib/export-producao"
 import {
@@ -83,6 +83,17 @@ function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onM
   const [diasEditados, setDiasEditados] = useState<DiaProducao[]>(producao.dias)
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
+  const [imprimindo, setImprimindo] = useState(false)
+
+  useEffect(() => {
+    if (!imprimindo) return
+    window.print()
+    const aoTerminar = () => {
+      setImprimindo(false)
+      window.removeEventListener("afterprint", aoTerminar)
+    }
+    window.addEventListener("afterprint", aoTerminar)
+  }, [imprimindo])
 
   function iniciarEdicao() {
     setDiasEditados(producao.dias)
@@ -123,83 +134,105 @@ function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onM
   const removerDiaEditado = (id: string) => setDiasEditados((atual) => atual.filter((d) => d.id !== id))
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex items-center gap-3">
-        <button
-          type="button"
-          onClick={() => !editando && setAberto((a) => !a)}
-          className="tap flex min-w-0 flex-1 items-center gap-2 text-left"
-        >
-          <ChevronDown className={cn("size-4 shrink-0 text-muted-foreground transition-transform", aberto && "rotate-180")} aria-hidden="true" />
+    <details
+      open={aberto}
+      onToggle={(e) => setAberto(e.currentTarget.open)}
+      data-imprimir-ativo={imprimindo ? "" : undefined}
+      className="producao-historico-item rounded-2xl border border-border bg-card p-5 print:break-inside-avoid"
+    >
+      <summary
+        onClick={(e) => {
+          if (editando) e.preventDefault()
+        }}
+        className="flex list-none items-center gap-3 [&::-webkit-details-marker]:hidden marker:content-none cursor-pointer"
+      >
+        <span className="flex min-w-0 flex-1 items-center gap-2">
+          <ChevronDown
+            className={cn("size-4 shrink-0 text-muted-foreground transition-transform print:hidden", aberto && "rotate-180")}
+            aria-hidden="true"
+          />
           <div className="min-w-0">
             <p className="font-heading truncate text-sm font-semibold text-card-foreground">{rotuloPeriodo(producao)}</p>
             <p className="text-xs text-muted-foreground">
               Concluído em {new Date(producao.concluido_em).toLocaleString("pt-BR")}
             </p>
           </div>
-        </button>
-        {editando ? (
-          <>
-            <button
-              type="button"
-              onClick={cancelarEdicao}
-              disabled={salvando}
-              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50 disabled:opacity-50"
-            >
-              <X className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Cancelar</span>
-            </button>
-            <button
-              type="button"
-              onClick={salvarEdicao}
-              disabled={salvando}
-              className="tap flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              <Save className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">{salvando ? "Salvando…" : "Salvar"}</span>
-            </button>
-          </>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => exportarProducaoPDF(producao.dias, { titulo: `Produção — ${rotuloPeriodo(producao)}` })}
-              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
-            >
-              <FileDown className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Gerar PDF</span>
-            </button>
-            <button
-              type="button"
-              onClick={iniciarEdicao}
-              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
-            >
-              <Pencil className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">Editar</span>
-            </button>
-            <button
-              type="button"
-              onClick={excluir}
-              disabled={excluindo}
-              className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:border-destructive/50 hover:bg-destructive/10 disabled:opacity-50"
-            >
-              <Trash2 className="size-3.5" aria-hidden="true" />
-              <span className="hidden sm:inline">{excluindo ? "Excluindo…" : "Excluir"}</span>
-            </button>
-          </>
-        )}
-      </div>
+        </span>
+        <div onClick={(e) => e.stopPropagation()} className="flex shrink-0 items-center gap-2 print:hidden">
+          {editando ? (
+            <>
+              <button
+                type="button"
+                onClick={cancelarEdicao}
+                disabled={salvando}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50 disabled:opacity-50"
+              >
+                <X className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Cancelar</span>
+              </button>
+              <button
+                type="button"
+                onClick={salvarEdicao}
+                disabled={salvando}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+              >
+                <Save className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">{salvando ? "Salvando…" : "Salvar"}</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  setAberto(true)
+                  setImprimindo(true)
+                }}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
+              >
+                <Printer className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Imprimir</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => exportarProducaoPDF(producao.dias, { titulo: `Produção — ${rotuloPeriodo(producao)}` })}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
+              >
+                <FileDown className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Gerar PDF</span>
+              </button>
+              <button
+                type="button"
+                onClick={iniciarEdicao}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
+              >
+                <Pencil className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">Editar</span>
+              </button>
+              <button
+                type="button"
+                onClick={excluir}
+                disabled={excluindo}
+                className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-destructive transition-colors hover:border-destructive/50 hover:bg-destructive/10 disabled:opacity-50"
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" />
+                <span className="hidden sm:inline">{excluindo ? "Excluindo…" : "Excluir"}</span>
+              </button>
+            </>
+          )}
+        </div>
+      </summary>
 
       {editando ? (
-        <div className="mt-3 flex flex-col gap-4 border-t border-border/60 pt-3">
+        <div className="mt-3 flex flex-col gap-4 border-t border-border/60 pt-3 print:hidden">
           {diasEditados.map((dia) => (
             <CardDia key={dia.id} dia={dia} onChange={atualizarDiaEditado} onRemover={() => removerDiaEditado(dia.id)} />
           ))}
         </div>
       ) : (
-        aberto && <DetalheProducao producao={producao} />
+        <DetalheProducao producao={producao} />
       )}
-    </div>
+    </details>
   )
 }
 
