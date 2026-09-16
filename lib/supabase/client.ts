@@ -11,18 +11,35 @@ function ehRemocaoDeCookie(value: string, options?: CookieOptions): boolean {
   return false
 }
 
+/**
+ * decodeURIComponent lança exceção em sequências "%" inválidas — um único cookie de
+ * terceiro (extensão do navegador, pixel de analytics etc.) com um valor malformado
+ * não pode derrubar a leitura dos outros cookies (inclusive o de sessão). O pacote
+ * "cookie" (usado pelo próprio @supabase/ssr) trata esse caso do mesmo jeito: cai
+ * para o valor bruto em vez de propagar o erro.
+ */
+function decodeSeguro(valor: string): string {
+  if (!valor.includes("%")) return valor
+  try {
+    return decodeURIComponent(valor)
+  } catch {
+    return valor
+  }
+}
+
 function lerCookiesDoDocumento(): { name: string; value: string }[] {
   if (!document.cookie) return []
   return document.cookie.split(";").map((par) => {
     const idx = par.indexOf("=")
-    const name = decodeURIComponent(par.slice(0, idx).trim())
-    const value = decodeURIComponent(par.slice(idx + 1).trim())
+    if (idx === -1) return { name: par.trim(), value: "" }
+    const name = par.slice(0, idx).trim()
+    const value = decodeSeguro(par.slice(idx + 1).trim())
     return { name, value }
   })
 }
 
 function serializarCookie(name: string, value: string, options?: CookieOptions): string {
-  let str = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+  let str = `${name}=${encodeURIComponent(value)}`
   if (options?.maxAge !== undefined) str += `; Max-Age=${Math.floor(options.maxAge)}`
   if (options?.expires) str += `; Expires=${options.expires.toUTCString()}`
   str += `; Path=${options?.path ?? "/"}`
