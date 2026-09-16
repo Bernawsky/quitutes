@@ -11,7 +11,7 @@ const poppins = Poppins({
   variable: '--font-poppins',
 })
 
-const TITULO_PADRAO = 'Quitutes — Pedidos de Café da Manhã'
+const TITULO_PADRAO = 'Quitutes'
 const DESCRICAO_PADRAO = 'Pedidos de cesta de café da manhã das pousadas de Ibitipoca, direto para o grupo do WhatsApp.'
 
 export const metadata: Metadata = {
