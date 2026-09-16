@@ -3,7 +3,7 @@ import { amanhaISO, contarItens, hojeISO, unidadeBuffet, type Feedback, type Ped
 import { calcularTotais, validarUnidades } from "@/lib/pedidos-validacao"
 
 const COLUNAS =
-  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token, tipo"
+  "id, created_at, pousada, pousada_id, titulo, saudacao, unidades, total_unidades, total_itens, total_pessoas, status, motivo_cancelamento, cancelado_at, updated_at, data_pedido, feedback_token, tipo, entregue, entregue_em"
 
 /** Avisa admins/equipe (push + log de eventos) sobre um pedido. Best-effort: não bloqueia o fluxo se falhar. */
 export function notificarEvento(tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo", pedidoId: number) {
@@ -188,6 +188,24 @@ export async function getPedidosPorData(dataISO: string): Promise<Pedido[]> {
     .order("pousada", { ascending: true })
   if (error) throw error
   return (data ?? []) as unknown as Pedido[]
+}
+
+/** Avisa a pousada + admins que o entregador marcou (ou desmarcou) entrega. Best-effort. */
+export function notificarEntrega(pedidoId: number) {
+  return fetch("/api/notificar/entrega", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ pedidoId }),
+  }).catch(() => {})
+}
+
+/** Marca (ou desmarca) um pedido como entregue — usado pela tela do entregador (RLS: admin + papel "entregador"). */
+export async function marcarEntregue(pedidoId: number, entregue: boolean, entregadorUserId: string): Promise<void> {
+  const { error } = await supabase
+    .from("pedidos")
+    .update({ entregue, entregue_em: entregue ? new Date().toISOString() : null, entregue_por: entregue ? entregadorUserId : null })
+    .eq("id", pedidoId)
+  if (error) throw error
 }
 
 /** Feedbacks recebidos (RLS: admins veem todos, pousada só os dos próprios pedidos). */

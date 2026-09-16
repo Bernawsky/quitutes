@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react"
 import useSWR from "swr"
-import { ShoppingBasket, Send, MessageCircle, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed } from "lucide-react"
+import { ShoppingBasket, Send, MessageCircle, Check, AlertCircle, LogOut, ListChecks, CalendarDays, MessageSquareHeart, UtensilsCrossed, Settings } from "lucide-react"
+import { ConfiguracoesNotificacoes } from "@/components/configuracoes-notificacoes"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
 import { UnidadeCard } from "@/components/unidade-card"
@@ -53,7 +54,7 @@ export function copiarFallback(texto: string): boolean {
   }
 }
 
-type Aba = "novo" | "meus" | "feedbacks" | "buffet"
+type Aba = "novo" | "meus" | "feedbacks" | "buffet" | "config"
 
 export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: () => void }) {
   const [aba, setAba] = useState<Aba>("novo")
@@ -64,6 +65,7 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
     { key: "meus", label: "Meus pedidos", icone: ListChecks },
     { key: "feedbacks", label: "Feedbacks", icone: MessageSquareHeart },
     ...(temBuffet ? [{ key: "buffet" as const, label: "Buffet", icone: UtensilsCrossed }] : []),
+    { key: "config" as const, label: "Configurações", icone: Settings },
   ]
   const indiceAba = Math.max(0, abas.findIndex((a) => a.key === aba))
   const { data: meusPedidos = [] } = useSWR<Pedido[]>(["meus-pedidos", pousada.id], () => getMeusPedidos(pousada.id))
@@ -206,6 +208,10 @@ export function ReservasApp({ pousada, onSair }: { pousada: Pousada; onSair?: ()
       ) : aba === "buffet" ? (
         <main className="mx-auto max-w-5xl px-4 py-6">
           <BuffetForm pousada={pousada} />
+        </main>
+      ) : aba === "config" ? (
+        <main className="mx-auto max-w-5xl px-4 py-6">
+          <ConfiguracoesNotificacoes />
         </main>
       ) : (
         <>

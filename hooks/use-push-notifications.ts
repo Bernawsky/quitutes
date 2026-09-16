@@ -20,27 +20,61 @@ function detectarIosNaoInstalado(): boolean {
   return !standalone
 }
 
+async function inscrever(chavePublica: string): Promise<boolean> {
+  const registro = await navigator.serviceWorker.register("/sw.js")
+  // pushManager.subscribe() é idempotente com a mesma applicationServerKey — se já existir uma
+  // inscrição válida, devolve ela mesma em vez de duplicar. Reenviar pro servidor sempre (upsert
+  // por endpoint) garante que o navegador e o banco nunca fiquem dessincronizados.
+  const inscricao = await registro.pushManager.subscribe({
+    userVisibleOnly: true,
+    applicationServerKey: paraUint8Array(chavePublica),
+  })
+  const resposta = await fetch("/api/push/subscribe", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(inscricao.toJSON()),
+  })
+  return resposta.ok
+}
+
 /**
  * Notificações push do navegador (Web Push) — funcionam em Chrome, Edge, Firefox
  * e Safari (macOS 16+ e iOS/iPadOS 16.4+, este último só com o site instalado
  * na tela de início). Requer NEXT_PUBLIC_VAPID_PUBLIC_KEY configurada.
+ *
+ * O estado não depende só de `pushManager.getSubscription()`: o navegador pode derrubar essa
+ * inscrição silenciosamente (troca de Service Worker, limpeza do sistema, etc.) mesmo com a
+ * permissão do usuário continuando "granted" — nesse caso a UI antiga mostrava "inativo" sem
+ * avisar que algo mudou, e o usuário achava que "ativar notificações só funciona na hora". Por
+ * isso, sempre que a permissão do navegador já está concedida, o hook tenta re-inscrever
+ * silenciosamente (idempotente) pra manter o navegador e a linha em `push_subscriptions`
+ * sincronizados sem exigir um clique manual em "Ativar" de novo.
  */
 export function usePushNotifications() {
   const [estado, setEstado] = useState<EstadoPush>("inativo")
+  const [permissao, setPermissao] = useState<NotificationPermission | "indisponivel">("default")
   const [carregando, setCarregando] = useState(false)
   const [iosNaoInstalado] = useState(detectarIosNaoInstalado)
 
   useEffect(() => {
     void (async () => {
-      if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY) {
+      const chavePublica = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+      if (typeof window === "undefined" || !("serviceWorker" in navigator) || !("PushManager" in window) || !chavePublica) {
+        setPermissao("indisponivel")
         setEstado("indisponivel")
         return
       }
+      setPermissao(Notification.permission)
       if (Notification.permission === "denied") {
         setEstado("negado")
         return
       }
       try {
+        if (Notification.permission === "granted") {
+          const ok = await inscrever(chavePublica)
+          setEstado(ok ? "ativo" : "inativo")
+          return
+        }
         const registro = await navigator.serviceWorker.register("/sw.js")
         const inscricao = await registro.pushManager.getSubscription()
         setEstado(inscricao ? "ativo" : "inativo")
@@ -58,23 +92,15 @@ export function usePushNotifications() {
     }
     setCarregando(true)
     try {
-      const permissao = await Notification.requestPermission()
-      if (permissao !== "granted") {
+      const permissaoConcedida = await Notification.requestPermission()
+      setPermissao(permissaoConcedida)
+      if (permissaoConcedida !== "granted") {
         setEstado("negado")
         return false
       }
-      const registro = await navigator.serviceWorker.register("/sw.js")
-      const inscricao = await registro.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: paraUint8Array(chavePublica),
-      })
-      await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(inscricao.toJSON()),
-      })
-      setEstado("ativo")
-      return true
+      const ok = await inscrever(chavePublica)
+      setEstado(ok ? "ativo" : "inativo")
+      return ok
     } finally {
       setCarregando(false)
     }
@@ -99,5 +125,5 @@ export function usePushNotifications() {
     }
   }, [])
 
-  return { estado, carregando, ativar, desativar, iosNaoInstalado }
+  return { estado, permissao, carregando, ativar, desativar, iosNaoInstalado }
 }

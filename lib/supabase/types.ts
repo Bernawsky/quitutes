@@ -23,6 +23,9 @@ export type Database = {
           data_pedido: string
           feedback_token: string
           tipo: string
+          entregue: boolean
+          entregue_em: string | null
+          entregue_por: string | null
         }
         Insert: {
           id?: number
@@ -43,6 +46,9 @@ export type Database = {
           data_pedido?: string
           feedback_token?: string
           tipo?: string
+          entregue?: boolean
+          entregue_em?: string | null
+          entregue_por?: string | null
         }
         Update: Partial<Database["public"]["Tables"]["pedidos"]["Insert"]>
         Relationships: []
@@ -152,7 +158,7 @@ export type Database = {
       eventos: {
         Row: {
           id: number
-          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
+          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo" | "entrega"
           pedido_id: number | null
           pousada: string | null
           mensagem: string
@@ -160,7 +166,7 @@ export type Database = {
         }
         Insert: {
           id?: number
-          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
+          tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo" | "entrega"
           pedido_id?: number | null
           pousada?: string | null
           mensagem: string
@@ -187,6 +193,18 @@ export type Database = {
           criado_por?: string | null
         }
         Update: Partial<Database["public"]["Tables"]["producoes"]["Insert"]>
+        Relationships: []
+      }
+      notificacoes_limpas: {
+        Row: { user_id: string; limpo_ate_id: number; atualizado_em: string }
+        Insert: { user_id: string; limpo_ate_id?: number; atualizado_em?: string }
+        Update: Partial<Database["public"]["Tables"]["notificacoes_limpas"]["Insert"]>
+        Relationships: []
+      }
+      preferencias_notificacao: {
+        Row: { user_id: string; entregas_ativas: boolean; atualizado_em: string }
+        Insert: { user_id: string; entregas_ativas?: boolean; atualizado_em?: string }
+        Update: Partial<Database["public"]["Tables"]["preferencias_notificacao"]["Insert"]>
         Relationships: []
       }
       metricas_exportadas: {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat, UtensilsCrossed } from "lucide-react"
+import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat, UtensilsCrossed, Bike } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -57,6 +57,14 @@ const EQUIPE = [
     email: "cafeteria@equipe.quitutes.internal",
     rota: "/vouchers",
     icone: UtensilsCrossed,
+  },
+  {
+    valor: "equipe:entregador",
+    nome: "Entregador",
+    papel: "Entregador",
+    email: "entregador@equipe.quitutes.internal",
+    rota: "/entregas",
+    icone: Bike,
   },
 ] as const
 

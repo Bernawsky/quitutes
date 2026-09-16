@@ -13,19 +13,14 @@ function garantirConfigurado() {
   configurado = true
 }
 
-/**
- * Envia uma notificação push para todos os dispositivos inscritos de admins e
- * da equipe (papel "operador" — Cozinha e Cafeteria). Melhor esforço: uma
- * inscrição expirada/inválida (404/410) é removida silenciosamente; falhas
- * pontuais não interrompem o envio para os demais dispositivos.
- */
-export async function enviarPushEquipe(payload: { titulo: string; corpo: string; url?: string }) {
-  garantirConfigurado()
-  if (!configurado) return
+type PayloadPush = { titulo: string; corpo: string; url?: string }
 
-  const admin = createAdminSupabaseClient()
-  const { data: papeis } = await admin.from("user_roles").select("user_id").in("role", ["admin", "operador"])
-  const userIds = (papeis ?? []).map((p) => p.user_id)
+/**
+ * Envia o payload para todas as inscrições ativas dos `userIds` dados. Melhor esforço: uma
+ * inscrição expirada/inválida (404/410) é removida silenciosamente; falhas pontuais não
+ * interrompem o envio para os demais dispositivos.
+ */
+async function enviarParaUsuarios(admin: ReturnType<typeof createAdminSupabaseClient>, userIds: string[], payload: PayloadPush) {
   if (userIds.length === 0) return
 
   const { data: inscricoes } = await admin.from("push_subscriptions").select("endpoint, p256dh, auth").in("user_id", userIds)
@@ -48,4 +43,36 @@ export async function enviarPushEquipe(payload: { titulo: string; corpo: string;
       }
     }),
   )
+}
+
+/** Envia uma notificação push para todos os dispositivos inscritos de admins e da equipe (papel "operador" — Cozinha e Cafeteria). */
+export async function enviarPushEquipe(payload: PayloadPush) {
+  garantirConfigurado()
+  if (!configurado) return
+
+  const admin = createAdminSupabaseClient()
+  const { data: papeis } = await admin.from("user_roles").select("user_id").in("role", ["admin", "operador"])
+  const userIds = (papeis ?? []).map((p) => p.user_id)
+  await enviarParaUsuarios(admin, userIds, payload)
+}
+
+/**
+ * Envia o aviso de "saiu para entrega"/"entregue" pros admins e pra conta da pousada daquele
+ * pedido — respeitando a preferência `preferencias_notificacao.entregas_ativas` de cada conta
+ * (liga por padrão: só fica de fora quem desligou explicitamente na aba de configurações).
+ */
+export async function enviarPushEntrega(pousadaAuthUserId: string | null, payload: PayloadPush) {
+  garantirConfigurado()
+  if (!configurado) return
+
+  const admin = createAdminSupabaseClient()
+  const { data: admins } = await admin.from("user_roles").select("user_id").eq("role", "admin")
+  const candidatos = [...new Set([...(admins ?? []).map((a) => a.user_id), ...(pousadaAuthUserId ? [pousadaAuthUserId] : [])])]
+  if (candidatos.length === 0) return
+
+  const { data: preferencias } = await admin.from("preferencias_notificacao").select("user_id, entregas_ativas").in("user_id", candidatos)
+  const desativados = new Set((preferencias ?? []).filter((p) => !p.entregas_ativas).map((p) => p.user_id))
+  const userIds = candidatos.filter((id) => !desativados.has(id))
+
+  await enviarParaUsuarios(admin, userIds, payload)
 }

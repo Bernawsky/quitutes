@@ -74,6 +74,8 @@ export type Pedido = {
   data_pedido: string
   feedback_token?: string
   tipo: "cesta" | "buffet"
+  entregue?: boolean
+  entregue_em?: string | null
 }
 
 export const NOME_UNIDADE_BUFFET = "Buffet"

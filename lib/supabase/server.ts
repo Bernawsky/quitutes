@@ -58,3 +58,15 @@ export async function exigirEquipeServer() {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).in("role", ["admin", "operador"])
   if (!data || data.length === 0) redirect("/")
 }
+
+/** Usado na página /entregas: acesso liberado para admins e para o entregador. */
+export async function exigirEntregadorServer() {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/")
+
+  const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).in("role", ["admin", "entregador"])
+  if (!data || data.length === 0) redirect("/")
+}

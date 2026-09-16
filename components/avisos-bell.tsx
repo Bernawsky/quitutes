@@ -2,15 +2,17 @@
 
 import { useEffect, useState } from "react"
 import useSWR, { mutate as mutateGlobal } from "swr"
-import { Bell, BellOff, BellRing, Ban, ShoppingBasket, Pencil, UtensilsCrossed } from "lucide-react"
+import { Bell, BellOff, BellRing, Ban, ShoppingBasket, Pencil, UtensilsCrossed, Trash2, Truck } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { supabase } from "@/lib/supabase/client"
 import { usePushNotifications } from "@/hooks/use-push-notifications"
+import { useAuth } from "@/hooks/use-auth"
+import { getLimpoAteId, limparNotificacoes } from "@/lib/notificacoes-api"
 
 type Evento = {
   id: number
-  tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
+  tipo: "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo" | "entrega"
   mensagem: string
   criado_em: string
 }
@@ -20,9 +22,8 @@ const ICONES: Record<Evento["tipo"], typeof ShoppingBasket> = {
   edicao: Pencil,
   cancelamento: Ban,
   buffet_novo: UtensilsCrossed,
+  entrega: Truck,
 }
-
-const CHAVE_VISTO = "quitutes-avisos-ultimo-visto"
 
 async function getEventos(): Promise<Evento[]> {
   const { data, error } = await supabase.from("eventos").select("id, tipo, mensagem, criado_em").order("criado_em", { ascending: false }).limit(30)
@@ -32,12 +33,13 @@ async function getEventos(): Promise<Evento[]> {
 
 /** Sino de avisos (novo pedido, edição, cancelamento, voucher de buffet) + controle de notificações push. */
 export function AvisosBell() {
-  const { data: eventos = [] } = useSWR("eventos", getEventos)
-  const [ultimoVisto, setUltimoVisto] = useState(0)
+  const { user } = useAuth()
+  const { data: todosEventos = [] } = useSWR("eventos", getEventos)
+  const { data: limpoAteId = 0, mutate: mutateLimpo } = useSWR(user ? ["notificacoes-limpas", user.id] : null, () => getLimpoAteId(user!.id))
   const { estado, carregando, ativar, desativar } = usePushNotifications()
+  const [limpando, setLimpando] = useState(false)
 
   useEffect(() => {
-    setUltimoVisto(Number(localStorage.getItem(CHAVE_VISTO) ?? 0))
     const canal = supabase
       .channel("eventos-realtime")
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "eventos" }, () => void mutateGlobal("eventos"))
@@ -47,17 +49,22 @@ export function AvisosBell() {
     }
   }, [])
 
-  const naoLidos = eventos.filter((e) => e.id > ultimoVisto).length
+  const eventos = todosEventos.filter((e) => e.id > limpoAteId)
 
-  const marcarComoLido = () => {
-    if (eventos.length === 0) return
-    const maiorId = eventos[0].id
-    localStorage.setItem(CHAVE_VISTO, String(maiorId))
-    setUltimoVisto(maiorId)
+  const limpar = async () => {
+    if (!user || eventos.length === 0) return
+    setLimpando(true)
+    try {
+      const maiorId = todosEventos[0].id
+      await limparNotificacoes(user.id, maiorId)
+      await mutateLimpo(maiorId)
+    } finally {
+      setLimpando(false)
+    }
   }
 
   return (
-    <Popover onOpenChange={(aberto) => aberto && marcarComoLido()}>
+    <Popover>
       <PopoverTrigger
         render={
           <button
@@ -66,37 +73,53 @@ export function AvisosBell() {
             className="tap relative flex size-9 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
           >
             <Bell className="size-4" aria-hidden="true" />
-            {naoLidos > 0 && (
+            {eventos.length > 0 && (
               <span className="absolute -top-1 -right-1 flex size-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
-                {naoLidos > 9 ? "9+" : naoLidos}
+                {eventos.length > 9 ? "9+" : eventos.length}
               </span>
             )}
           </button>
         }
       />
       <PopoverContent className="w-80 p-0" align="end">
-        <div className="flex items-center justify-between border-b border-border px-3 py-2.5">
+        <div className="flex items-center justify-between gap-2 border-b border-border px-3 py-2.5">
           <p className="text-sm font-semibold text-card-foreground">Avisos</p>
-          {estado !== "indisponivel" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="tap h-7 gap-1.5 px-2 text-xs"
-              disabled={carregando || estado === "negado"}
-              onClick={() => void (estado === "ativo" ? desativar() : ativar())}
-            >
-              {estado === "ativo" ? (
-                <BellRing className="size-3.5" aria-hidden="true" />
-              ) : (
-                <BellOff className="size-3.5" aria-hidden="true" />
-              )}
-              {estado === "ativo" ? "Notificações ativas" : estado === "negado" ? "Bloqueadas" : "Ativar notificações"}
-            </Button>
-          )}
+          <div className="flex items-center gap-1">
+            {eventos.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="tap h-7 gap-1.5 px-2 text-xs"
+                disabled={limpando}
+                onClick={() => void limpar()}
+              >
+                <Trash2 className="size-3.5" aria-hidden="true" />
+                Limpar
+              </Button>
+            )}
+            {estado !== "indisponivel" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="tap h-7 gap-1.5 px-2 text-xs"
+                disabled={carregando || estado === "negado"}
+                onClick={() => void (estado === "ativo" ? desativar() : ativar())}
+              >
+                {estado === "ativo" ? (
+                  <BellRing className="size-3.5" aria-hidden="true" />
+                ) : (
+                  <BellOff className="size-3.5" aria-hidden="true" />
+                )}
+                {estado === "ativo" ? "Ativas" : estado === "negado" ? "Bloqueadas" : "Ativar"}
+              </Button>
+            )}
+          </div>
         </div>
         <ul className="max-h-80 overflow-y-auto">
           {eventos.length === 0 ? (
-            <li className="px-3 py-6 text-center text-sm text-muted-foreground">Nenhum aviso ainda.</li>
+            <li className="px-3 py-6 text-center text-sm text-muted-foreground">
+              {todosEventos.length === 0 ? "Nenhum aviso ainda." : "Tudo limpo por aqui."}
+            </li>
           ) : (
             eventos.map((e) => {
               const Icone = ICONES[e.tipo]
