@@ -27,16 +27,18 @@ export async function POST(request: Request) {
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("id, pousada, pousada_id, saudacao, titulo, data_pedido, entregue")
+    .select("id, pousada, pousada_id, unidades, entregue")
     .eq("id", pedidoId)
     .maybeSingle()
   if (!pedido) return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 })
 
   const nome = pedido.pousada ?? "Pousada"
-  const quemOuQuando = pedido.saudacao || pedido.titulo || pedido.data_pedido
+  // Sem repetir a saudação do pedido (sempre a mesma frase, não identifica nada) — em vez
+  // disso, quando entregue, lista os chalés daquele pedido.
+  const chales = ((pedido.unidades ?? []) as { unidade?: string }[]).map((u) => u.unidade).filter(Boolean).join(", ")
   const mensagem = pedido.entregue
-    ? `Pedido de ${nome} foi entregue: ${quemOuQuando}`
-    : `Pedido de ${nome} saiu para entrega: ${quemOuQuando}`
+    ? `${nome}: Quitutes entregou${chales ? ` no ${chales}` : ""}`
+    : `${nome}: Quitutes saiu para entrega`
 
   const admin = createAdminSupabaseClient()
   let pousadaAuthUserId: string | null = null
@@ -47,7 +49,7 @@ export async function POST(request: Request) {
 
   await Promise.all([
     admin.from("eventos").insert({ tipo: "entrega", pedido_id: pedido.id, pousada: nome, mensagem }),
-    enviarPushEntrega(pousadaAuthUserId, { titulo: pedido.entregue ? "Pedido entregue" : "Saiu para entrega", corpo: mensagem, url: "/" }),
+    enviarPushEntrega(pousadaAuthUserId, { titulo: pedido.entregue ? `Pedido entregue de ${nome}` : `Saiu para entrega de ${nome}`, corpo: mensagem, url: "/" }),
   ])
 
   return NextResponse.json({ ok: true })

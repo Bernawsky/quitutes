@@ -6,11 +6,12 @@ import { enviarPushEquipe } from "@/lib/push"
 type Tipo = "novo_pedido" | "edicao" | "cancelamento" | "buffet_novo"
 const TIPOS: Tipo[] = ["novo_pedido", "edicao", "cancelamento", "buffet_novo"]
 
-const TITULOS: Record<Tipo, string> = {
-  novo_pedido: "Novo pedido",
-  edicao: "Pedido editado",
-  cancelamento: "Pedido cancelado",
-  buffet_novo: "Novo voucher de Buffet",
+/** Título sempre traz o nome da pousada, pra dar pra identificar de quem é sem abrir a notificação. */
+const TITULOS: Record<Tipo, (nome: string) => string> = {
+  novo_pedido: (nome) => `Novo pedido de ${nome}`,
+  edicao: (nome) => `Pedido editado de ${nome}`,
+  cancelamento: (nome) => `Pedido cancelado de ${nome}`,
+  buffet_novo: (nome) => `Novo voucher de Buffet de ${nome}`,
 }
 
 /**
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
 
   const { data: pedido } = await supabase
     .from("pedidos")
-    .select("id, pousada, saudacao, titulo, data_pedido, status, tipo, total_pessoas, motivo_cancelamento")
+    .select("id, pousada, data_pedido, status, tipo, total_pessoas, motivo_cancelamento")
     .eq("id", pedidoId)
     .maybeSingle()
   if (!pedido) return NextResponse.json({ error: "Pedido não encontrado." }, { status: 404 })
@@ -48,11 +49,12 @@ export async function POST(request: Request) {
   }
 
   const nome = pedido.pousada ?? "Pousada"
-  const quemOuQuando = pedido.saudacao || pedido.titulo || pedido.data_pedido
+  // Corpo não repete a saudação do pedido (ex: "☕Olá, café para (quinta-feira)...") — é sempre
+  // a mesma frase, não ajuda a identificar nada e só deixa a notificação poluída.
   const mensagens: Record<Tipo, string> = {
-    novo_pedido: `${nome} enviou um novo pedido: ${quemOuQuando}`,
-    edicao: `${nome} editou o pedido #${pedido.id}: ${quemOuQuando}`,
-    cancelamento: `${nome} cancelou o pedido #${pedido.id}${pedido.motivo_cancelamento ? ` — ${pedido.motivo_cancelamento}` : ""}`,
+    novo_pedido: `${nome} enviou um novo pedido`,
+    edicao: `${nome} editou o pedido`,
+    cancelamento: `${nome} cancelou o pedido${pedido.motivo_cancelamento ? ` — ${pedido.motivo_cancelamento}` : ""}`,
     buffet_novo: `${nome} enviou um voucher de Buffet para ${pedido.data_pedido}: ${pedido.total_pessoas} pessoa(s)`,
   }
   const mensagem = mensagens[tipo]
@@ -62,7 +64,7 @@ export async function POST(request: Request) {
   // um não depende do outro, então não faz sentido esperar um pra começar o outro.
   await Promise.all([
     admin.from("eventos").insert({ tipo, pedido_id: pedido.id, pousada: nome, mensagem }),
-    enviarPushEquipe({ titulo: TITULOS[tipo], corpo: mensagem, url: tipo === "buffet_novo" ? "/vouchers" : "/metricas/pedidos" }),
+    enviarPushEquipe({ titulo: TITULOS[tipo](nome), corpo: mensagem, url: tipo === "buffet_novo" ? "/vouchers" : "/metricas/pedidos" }),
   ])
 
   return NextResponse.json({ ok: true })
