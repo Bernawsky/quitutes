@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useId, useState } from "react"
 import useSWR, { mutate as mutateGlobal } from "swr"
 import { Bell, BellOff, BellRing, Ban, ShoppingBasket, Pencil, UtensilsCrossed, Trash2, Truck } from "lucide-react"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
@@ -38,16 +38,20 @@ export function AvisosBell() {
   const { data: limpoAteId = 0, mutate: mutateLimpo } = useSWR(user ? ["notificacoes-limpas", user.id] : null, () => getLimpoAteId(user!.id))
   const { estado, carregando, ativar, desativar } = usePushNotifications()
   const [limpando, setLimpando] = useState(false)
+  // O layout de métricas monta o sino tanto no cabeçalho mobile quanto na barra de desktop
+  // (só um dos dois fica visível por vez via CSS) — precisa de um canal por instância, senão
+  // o segundo .subscribe() na mesma tabela colide com "tried to subscribe multiple times".
+  const idInstancia = useId()
 
   useEffect(() => {
     const canal = supabase
-      .channel("eventos-realtime")
+      .channel(`eventos-realtime-${idInstancia}`)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "eventos" }, () => void mutateGlobal("eventos"))
       .subscribe()
     return () => {
       void supabase.removeChannel(canal)
     }
-  }, [])
+  }, [idInstancia])
 
   const eventos = todosEventos.filter((e) => e.id > limpoAteId)
 

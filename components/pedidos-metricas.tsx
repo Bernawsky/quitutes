@@ -5,12 +5,14 @@ import { Search, Clock, ChevronDown, Ban, CalendarDays, UtensilsCrossed } from "
 import { Button } from "@/components/ui/button"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Calendario } from "@/components/calendario"
+import { HistoricoMetricas } from "@/components/historico-metricas"
 import { normalizarHorario, observacoesUnidade, rotuloData } from "@/lib/pedidos"
 import { useDadosMetricas } from "@/hooks/use-dados-metricas"
 import { AoEntrar } from "@/components/ao-entrar"
 import { cn } from "@/lib/utils"
 
 export function PedidosMetricas() {
+  const [visao, setVisao] = useState<"pedidos" | "historico">("pedidos")
   const [busca, setBusca] = useState("")
   const [dataExata, setDataExata] = useState("")
   const [expandido, setExpandido] = useState<number | null>(null)
@@ -19,6 +21,33 @@ export function PedidosMetricas() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="inline-flex w-fit shrink-0 rounded-lg bg-muted p-0.5">
+        <button
+          type="button"
+          onClick={() => setVisao("pedidos")}
+          className={cn(
+            "tap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            visao === "pedidos" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Pedidos
+        </button>
+        <button
+          type="button"
+          onClick={() => setVisao("historico")}
+          className={cn(
+            "tap rounded-md px-3 py-1.5 text-sm font-medium transition-colors",
+            visao === "historico" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+          )}
+        >
+          Edições e cancelamentos
+        </button>
+      </div>
+
+      {visao === "historico" ? (
+        <HistoricoMetricas />
+      ) : (
+        <>
       <div className="flex flex-wrap gap-2.5">
         <div className="flex min-w-48 flex-1 items-center gap-2 rounded-xl border border-border bg-card px-3 py-2">
           <Search className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
@@ -91,7 +120,7 @@ export function PedidosMetricas() {
                           Buffet
                         </span>
                       )}
-                      #{p.id} · {p.pousada ?? "—"} — {p.saudacao || p.titulo}
+                      {p.pousada ?? "—"}
                     </p>
                     <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="size-3 shrink-0" aria-hidden="true" />
@@ -135,6 +164,8 @@ export function PedidosMetricas() {
           })}
         </ul>
         </AoEntrar>
+      )}
+        </>
       )}
     </div>
   )
