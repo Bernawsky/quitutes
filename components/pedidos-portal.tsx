@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react"
 import { WifiOff } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { usePousadaSessao } from "@/hooks/use-pousada"
 import { PousadaLogin } from "@/components/pousada-login"
 import { ReservasApp } from "@/components/reservas-app"
@@ -9,14 +10,24 @@ import { TelaCarregando } from "@/components/tela-carregando"
 import { Button } from "@/components/ui/button"
 import { getPousadaPorSlug } from "@/lib/pousadas-api"
 import { encerrarSessao } from "@/lib/supabase/client"
+import { rotaPorEmailDeEquipe } from "@/lib/contas-equipe"
 import type { Pousada } from "@/lib/pousadas"
 
 /** Portal de pedidos: exige login da pousada (Supabase Auth) e reage à sessão automaticamente. */
 export function PedidosPortal({ slug }: { slug?: string }) {
-  const { pousada, carregando, sair } = usePousadaSessao()
+  const router = useRouter()
+  const { pousada, emailSessao, carregando, sair } = usePousadaSessao()
   const [pousadaFixa, setPousadaFixa] = useState<Pousada | null | undefined>(slug ? undefined : null)
   const [erroConexao, setErroConexao] = useState(false)
   const [tentativa, setTentativa] = useState(0)
+
+  // Reabrir o app (atalho instalado, PWA) sempre volta pra "/" — não preserva a última tela.
+  // Se a sessão válida for de um admin/equipe (que não tem linha em "pousadas"), sem isso a
+  // pessoa via a tela de login de novo mesmo estando logada, porque pousada ficava null.
+  const rotaEquipe = pousada ? null : rotaPorEmailDeEquipe(emailSessao)
+  useEffect(() => {
+    if (rotaEquipe) router.replace(rotaEquipe)
+  }, [rotaEquipe, router])
 
   useEffect(() => {
     if (!slug) return
@@ -61,7 +72,7 @@ export function PedidosPortal({ slug }: { slug?: string }) {
     )
   }
 
-  if (carregando || pousadaFixa === undefined) {
+  if (carregando || pousadaFixa === undefined || rotaEquipe) {
     return <TelaCarregando />
   }
 

@@ -11,12 +11,16 @@ import type { Pousada } from "@/lib/pousadas"
  */
 export function usePousadaSessao() {
   const [pousada, setPousada] = useState<Pousada | null>(null)
+  // E-mail da sessão autenticada, mesmo quando não é uma pousada (admin/equipe) — usado pelo
+  // PedidosPortal pra saber que existe sessão válida e redirecionar em vez de mostrar o login.
+  const [emailSessao, setEmailSessao] = useState<string | null>(null)
   const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
     let ativo = true
 
-    async function resolver(userId: string | undefined) {
+    async function resolver(userId: string | undefined, email: string | null | undefined) {
+      if (ativo) setEmailSessao(email ?? null)
       if (!userId) {
         if (ativo) {
           setPousada(null)
@@ -40,10 +44,10 @@ export function usePousadaSessao() {
 
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       setCarregando(true)
-      void resolver(session?.user?.id)
+      void resolver(session?.user?.id, session?.user?.email)
     })
 
-    void sessaoAtualRenovada().then((sessao) => resolver(sessao?.user?.id))
+    void sessaoAtualRenovada().then((sessao) => resolver(sessao?.user?.id, sessao?.user?.email))
 
     return () => {
       ativo = false
@@ -54,7 +58,8 @@ export function usePousadaSessao() {
   const sair = async () => {
     await encerrarSessao()
     setPousada(null)
+    setEmailSessao(null)
   }
 
-  return { pousada, carregando, sair }
+  return { pousada, emailSessao, carregando, sair }
 }

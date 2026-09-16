@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff, ChefHat, UtensilsCrossed, Bike } from "lucide-react"
+import { LogIn, Lock, ShieldCheck, Building2, Eye, EyeOff } from "lucide-react"
 import { toast } from "sonner"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -18,55 +18,12 @@ import {
 import { supabase } from "@/lib/supabase/client"
 import { getPousadas } from "@/lib/pousadas-api"
 import { pousadaEmailSintetico, type Pousada } from "@/lib/pousadas"
+import { ADMINS, EQUIPE } from "@/lib/contas-equipe"
 
 type Props = {
   /** Quando definido, só aceita o login desta pousada. */
   pousadaFixa?: Pousada
 }
-
-/** Contas administrativas (Developer / Enterprise) que acessam o dashboard. */
-const ADMINS = [
-  {
-    valor: "admin:bernardo",
-    nome: "Bernardo Campos",
-    papel: "Developer",
-    email: "bernardootavio007@gmail.com",
-  },
-  {
-    valor: "admin:beth",
-    nome: "Quitutes da Beth",
-    papel: "Enterprise",
-    email: "quitutesdabethibitipoca@gmail.com",
-  },
-] as const
-
-/** Equipe interna sem conta de pousada (cozinha, cafeteria) — cada uma acessa só a própria tela. */
-const EQUIPE = [
-  {
-    valor: "equipe:cozinha",
-    nome: "Equipe da Cozinha",
-    papel: "Cozinha",
-    email: "cozinha@equipe.quitutes.internal",
-    rota: "/leitor",
-    icone: ChefHat,
-  },
-  {
-    valor: "equipe:cafeteria",
-    nome: "Equipe da Cafeteria",
-    papel: "Cafeteria",
-    email: "cafeteria@equipe.quitutes.internal",
-    rota: "/vouchers",
-    icone: UtensilsCrossed,
-  },
-  {
-    valor: "equipe:entregador",
-    nome: "Entregador",
-    papel: "Entregador",
-    email: "entregador@equipe.quitutes.internal",
-    rota: "/entregas",
-    icone: Bike,
-  },
-] as const
 
 export function PousadaLogin({ pousadaFixa }: Props) {
   const router = useRouter()
