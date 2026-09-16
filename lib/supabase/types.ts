@@ -207,6 +207,17 @@ export type Database = {
         Update: Partial<Database["public"]["Tables"]["preferencias_notificacao"]["Insert"]>
         Relationships: []
       }
+      preferencias_interface: {
+        Row: { user_id: string; tema: "light" | "dark" | "system"; tamanho_fonte: "pequeno" | "medio" | "grande"; atualizado_em: string }
+        Insert: {
+          user_id: string
+          tema?: "light" | "dark" | "system"
+          tamanho_fonte?: "pequeno" | "medio" | "grande"
+          atualizado_em?: string
+        }
+        Update: Partial<Database["public"]["Tables"]["preferencias_interface"]["Insert"]>
+        Relationships: []
+      }
       metricas_exportadas: {
         Row: {
           id: number

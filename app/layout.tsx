@@ -2,6 +2,7 @@ import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
+import { TemaSync } from '@/components/tema-sync'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -67,12 +68,26 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  colorScheme: 'light',
+  colorScheme: 'light dark',
   themeColor: '#ffffff',
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
 }
+
+// Roda antes da hidratação pra aplicar o tema/tamanho de fonte salvos (localStorage, ver
+// lib/tema.ts) sem um "flash" da aparência padrão — o TemaSync (client component) reconcilia
+// com o banco depois, quando/se houver sessão logada.
+const SCRIPT_TEMA = `
+(function () {
+  try {
+    var tema = localStorage.getItem("quitutes-tema");
+    if (tema === "dark" || tema === "light") document.documentElement.classList.add(tema);
+    var fonte = localStorage.getItem("quitutes-tamanho-fonte");
+    if (fonte === "pequeno" || fonte === "grande") document.documentElement.setAttribute("data-fonte", fonte);
+  } catch (e) {}
+})();
+`
 
 export default function RootLayout({
   children,
@@ -80,8 +95,10 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="pt-BR" className={`light bg-background ${inter.variable} ${poppins.variable}`}>
+    <html lang="pt-BR" className={`bg-background ${inter.variable} ${poppins.variable}`}>
       <body className="font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+        <TemaSync />
         {children}
         <Toaster position="top-center" richColors />
         {process.env.NODE_ENV === 'production' && <Analytics />}

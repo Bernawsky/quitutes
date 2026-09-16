@@ -162,11 +162,18 @@
   html {
     /* Escala levemente todo o sistema (fontes, ícones, espaçamentos — tudo em rem)
        um pouco para baixo, sem precisar tocar em cada componente. */
-    font-size: 93.75%; /* 15px, base era 16px */
+    font-size: 93.75%; /* 15px, base era 16px — tamanho "médio" (data-fonte não setado ou "medio") */
     /* Nunca permite rolagem horizontal: nenhum elemento pode "vazar" da tela.
        Só no eixo X — a rolagem vertical normal da página continua livre. */
     max-width: 100vw;
     overflow-x: hidden;
+  }
+  /* Preferência de tamanho de fonte da conta (aba Configurações) — ver lib/tema.ts. */
+  html[data-fonte='pequeno'] {
+    font-size: 87.5%; /* 14px */
+  }
+  html[data-fonte='grande'] {
+    font-size: 106.25%; /* 17px */
   }
   body {
     @apply bg-background text-foreground;

@@ -2,13 +2,15 @@
 
 import { useState } from "react"
 import useSWR from "swr"
-import { BellRing, Truck, TriangleAlert } from "lucide-react"
+import { BellRing, Truck, TriangleAlert, Palette, Sun, Moon, Monitor, CaseSensitive } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Switch } from "@/components/ui/switch"
 import { cn } from "@/lib/utils"
 import { useAuth } from "@/hooks/use-auth"
 import { usePushNotifications } from "@/hooks/use-push-notifications"
 import { getPreferenciasNotificacao, salvarPreferenciasNotificacao } from "@/lib/notificacoes-api"
+import { getPreferenciasInterface, salvarPreferenciasInterface } from "@/lib/preferencias-interface-api"
+import { aplicarTema, aplicarTamanhoFonte, type Tema, type TamanhoFonte } from "@/lib/tema"
 
 const ROTULO_PERMISSAO: Record<string, string> = {
   granted: "Permitido",
@@ -42,8 +44,93 @@ export function ConfiguracoesNotificacoes() {
     }
   }
 
+  const { data: aparencia, mutate: mutateAparencia } = useSWR(
+    user ? ["preferencias-interface", user.id] : null,
+    () => getPreferenciasInterface(user!.id),
+  )
+
+  async function escolherTema(tema: Tema) {
+    aplicarTema(tema)
+    await mutateAparencia({ tema, tamanho_fonte: aparencia?.tamanho_fonte ?? "medio" }, { revalidate: false })
+    if (user) await salvarPreferenciasInterface(user.id, { tema })
+  }
+
+  async function escolherFonte(tamanho_fonte: TamanhoFonte) {
+    aplicarTamanhoFonte(tamanho_fonte)
+    await mutateAparencia({ tema: aparencia?.tema ?? "system", tamanho_fonte }, { revalidate: false })
+    if (user) await salvarPreferenciasInterface(user.id, { tamanho_fonte })
+  }
+
   return (
     <div className="flex flex-col gap-5">
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div className="flex items-center gap-2">
+          <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
+            <Palette className="size-4" aria-hidden="true" />
+          </span>
+          <h2 className="font-heading text-base font-semibold text-card-foreground">Aparência</h2>
+        </div>
+        <p className="mt-2 text-sm text-muted-foreground">Tema e tamanho da fonte — vale para todos os seus dispositivos.</p>
+
+        <div className="mt-4 flex flex-col gap-3">
+          <div>
+            <span className="text-xs font-medium text-muted-foreground">Tema</span>
+            <div className="mt-1.5 inline-flex w-full rounded-lg bg-muted p-0.5">
+              {(
+                [
+                  { valor: "light" as const, rotulo: "Claro", icone: Sun },
+                  { valor: "dark" as const, rotulo: "Escuro", icone: Moon },
+                  { valor: "system" as const, rotulo: "Sistema", icone: Monitor },
+                ] satisfies { valor: Tema; rotulo: string; icone: typeof Sun }[]
+              ).map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  onClick={() => void escolherTema(opcao.valor)}
+                  className={cn(
+                    "tap flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+                    (aparencia?.tema ?? "system") === opcao.valor
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <opcao.icone className="size-3.5" aria-hidden="true" />
+                  {opcao.rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <span className="text-xs font-medium text-muted-foreground">Tamanho da fonte</span>
+            <div className="mt-1.5 inline-flex w-full rounded-lg bg-muted p-0.5">
+              {(
+                [
+                  { valor: "pequeno" as const, rotulo: "Pequena" },
+                  { valor: "medio" as const, rotulo: "Média" },
+                  { valor: "grande" as const, rotulo: "Grande" },
+                ] satisfies { valor: TamanhoFonte; rotulo: string }[]
+              ).map((opcao) => (
+                <button
+                  key={opcao.valor}
+                  type="button"
+                  onClick={() => void escolherFonte(opcao.valor)}
+                  className={cn(
+                    "tap flex flex-1 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium transition-colors",
+                    (aparencia?.tamanho_fonte ?? "medio") === opcao.valor
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground",
+                  )}
+                >
+                  <CaseSensitive className="size-3.5" aria-hidden="true" />
+                  {opcao.rotulo}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section className="rounded-2xl border border-border bg-card p-5">
         <div className="flex items-center gap-2">
           <span className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
