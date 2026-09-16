@@ -11,7 +11,7 @@ import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
 import { useAuth } from "@/hooks/use-auth"
 import { useFiltrosMetricas } from "@/hooks/use-filtros-metricas"
 import { useDadosMetricas, useRealtimePedidos } from "@/hooks/use-dados-metricas"
-import { supabase } from "@/lib/supabase/client"
+import { encerrarSessao } from "@/lib/supabase/client"
 
 const ABAS = [
   { href: "/metricas", label: "Visão geral" },
@@ -68,7 +68,7 @@ export function MetricasShell({ children }: { children: React.ReactNode }) {
   const mostrarPendencia = abaComPendencia && pendencias.length > 0 && (pendenciaFixa || !pendenciasFechadas)
 
   const sair = async () => {
-    await supabase.auth.signOut()
+    await encerrarSessao()
     router.replace("/")
   }
 

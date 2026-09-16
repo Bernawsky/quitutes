@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { supabase, sessaoAtualRenovada } from "@/lib/supabase/client"
+import { encerrarSessao, supabase, sessaoAtualRenovada } from "@/lib/supabase/client"
 import { getPousadaPorAuthUser } from "@/lib/pousadas-api"
 import type { Pousada } from "@/lib/pousadas"
 
@@ -52,7 +52,7 @@ export function usePousadaSessao() {
   }, [])
 
   const sair = async () => {
-    await supabase.auth.signOut()
+    await encerrarSessao()
     setPousada(null)
   }
 

@@ -8,7 +8,7 @@ import { ReservasApp } from "@/components/reservas-app"
 import { TelaCarregando } from "@/components/tela-carregando"
 import { Button } from "@/components/ui/button"
 import { getPousadaPorSlug } from "@/lib/pousadas-api"
-import { supabase } from "@/lib/supabase/client"
+import { encerrarSessao } from "@/lib/supabase/client"
 import type { Pousada } from "@/lib/pousadas"
 
 /** Portal de pedidos: exige login da pousada (Supabase Auth) e reage à sessão automaticamente. */
@@ -67,7 +67,7 @@ export function PedidosPortal({ slug }: { slug?: string }) {
 
   // URL fixa de uma pousada: se a sessão atual é de outra pousada, desloga.
   if (pousada && pousadaFixa && pousada.slug !== pousadaFixa.slug) {
-    void supabase.auth.signOut()
+    void encerrarSessao()
     return <TelaCarregando texto="Redirecionando..." />
   }
 

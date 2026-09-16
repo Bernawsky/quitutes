@@ -1,11 +1,71 @@
 import { createBrowserClient } from "@supabase/ssr"
+import type { CookieOptions } from "@supabase/ssr"
 import type { Session } from "@supabase/supabase-js"
 import type { Database } from "@/lib/supabase/types"
+
+/** Uma entrada de setAll conta como "apagar" quando o valor fica vazio ou a validade expira. */
+function ehRemocaoDeCookie(value: string, options?: CookieOptions): boolean {
+  if (value === "") return true
+  if (options?.maxAge !== undefined && options.maxAge <= 0) return true
+  if (options?.expires && options.expires.getTime() <= Date.now()) return true
+  return false
+}
+
+function lerCookiesDoDocumento(): { name: string; value: string }[] {
+  if (!document.cookie) return []
+  return document.cookie.split(";").map((par) => {
+    const idx = par.indexOf("=")
+    const name = decodeURIComponent(par.slice(0, idx).trim())
+    const value = decodeURIComponent(par.slice(idx + 1).trim())
+    return { name, value }
+  })
+}
+
+function serializarCookie(name: string, value: string, options?: CookieOptions): string {
+  let str = `${encodeURIComponent(name)}=${encodeURIComponent(value)}`
+  if (options?.maxAge !== undefined) str += `; Max-Age=${Math.floor(options.maxAge)}`
+  if (options?.expires) str += `; Expires=${options.expires.toUTCString()}`
+  str += `; Path=${options?.path ?? "/"}`
+  if (options?.domain) str += `; Domain=${options.domain}`
+  if (options?.sameSite) str += `; SameSite=${options.sameSite}`
+  if (options?.secure) str += "; Secure"
+  return str
+}
+
+/**
+ * true só durante um logout explícito (ver encerrarSessao) — é o único momento em que um
+ * cookie de sessão deve mesmo ser apagado no navegador.
+ */
+let permitirRemocaoDeCookie = false
 
 export function createClient() {
   return createBrowserClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          if (typeof document === "undefined") return []
+          return lerCookiesDoDocumento()
+        },
+        setAll(cookiesToSet) {
+          if (typeof document === "undefined") return
+          // Mesma corrida descrita em middleware.ts, só que do lado do navegador: se o refresh
+          // automático do GoTrueClient (rodando aqui) e o do middleware (numa requisição do
+          // servidor) tentarem renovar o MESMO refresh token ao mesmo tempo, quem perde recebe
+          // "already used" e o supabase-js reage tentando apagar o cookie de sessão local — o
+          // que derrubava o login sozinho mesmo já com o token bom (renovado pelo outro lado)
+          // salvo no cookie. Um logout de verdade passa por encerrarSessao(), que libera essa
+          // remoção de propósito.
+          const atualizacoes = permitirRemocaoDeCookie
+            ? cookiesToSet
+            : cookiesToSet.filter(({ value, options }) => !ehRemocaoDeCookie(value, options))
+          for (const { name, value, options } of atualizacoes) {
+            document.cookie = serializarCookie(name, value, options)
+          }
+        },
+      },
+    },
   )
 }
 
@@ -54,4 +114,14 @@ export async function sessaoAtualRenovada(): Promise<Session | null> {
   const { data: renovada, error } = await supabase.auth.refreshSession()
   if (error) return null
   return renovada.session
+}
+
+/** Logout explícito — único caso em que os cookies de sessão devem mesmo ser apagados no navegador. */
+export async function encerrarSessao() {
+  permitirRemocaoDeCookie = true
+  try {
+    await supabase.auth.signOut()
+  } finally {
+    permitirRemocaoDeCookie = false
+  }
 }
