@@ -1,9 +1,11 @@
 import type { Metadata } from "next"
-import { UtensilsCrossed } from "lucide-react"
+import Link from "next/link"
+import { UtensilsCrossed, Settings } from "lucide-react"
 import { exigirEquipeServer } from "@/lib/supabase/server"
 import { ListaVouchersBuffet } from "@/components/lista-vouchers-buffet"
 import { AvisosBell } from "@/components/avisos-bell"
 import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
+import { BotaoSair } from "@/components/botao-sair"
 
 export const dynamic = "force-dynamic"
 
@@ -27,6 +29,14 @@ export default async function VouchersPage() {
             <p className="text-sm text-muted-foreground">Hóspedes que as pousadas enviaram para o café da cafeteria</p>
           </div>
           <AvisosBell />
+          <Link
+            href="/configuracoes"
+            className="tap inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <Settings className="size-4" aria-hidden="true" />
+            Configurações
+          </Link>
+          <BotaoSair />
         </div>
       </header>
 

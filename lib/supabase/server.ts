@@ -70,3 +70,12 @@ export async function exigirEntregadorServer() {
   const { data } = await supabase.from("user_roles").select("role").eq("user_id", user.id).in("role", ["admin", "entregador"])
   if (!data || data.length === 0) redirect("/")
 }
+
+/** Usado em /configuracoes: qualquer conta autenticada (pousada, admin ou equipe) pode ajustar as próprias preferências. */
+export async function exigirSessaoServer() {
+  const supabase = await createServerSupabaseClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) redirect("/")
+}

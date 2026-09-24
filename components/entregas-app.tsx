@@ -2,12 +2,14 @@
 
 import { useEffect, useState } from "react"
 import useSWR from "swr"
-import { Bike, CalendarDays, CheckCircle2, Circle, Clock, Building2 } from "lucide-react"
+import { Bike, CalendarDays, CheckCircle2, Circle, Clock, Building2, Settings } from "lucide-react"
+import Link from "next/link"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Button } from "@/components/ui/button"
 import { Calendario } from "@/components/calendario"
 import { AvisosBell } from "@/components/avisos-bell"
 import { AvisoPushDesativado } from "@/components/aviso-push-desativado"
+import { BotaoSair } from "@/components/botao-sair"
 import { useAuth } from "@/hooks/use-auth"
 import { getPedidosPorData, getDatasComPedidosCesta, marcarEntregue, notificarEntrega } from "@/lib/pedidos-api"
 import { supabase } from "@/lib/supabase/client"
@@ -121,6 +123,14 @@ export function EntregasApp() {
               <Calendario valor={data} onSelecionar={setData} datasComPedido={datasComPedido} />
             </PopoverContent>
           </Popover>
+          <Link
+            href="/configuracoes"
+            className="tap inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            <Settings className="size-4" aria-hidden="true" />
+            Configurações
+          </Link>
+          <BotaoSair />
         </div>
       </header>
 
