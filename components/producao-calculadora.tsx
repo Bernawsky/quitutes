@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, Save, Eraser, History } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, Save, Eraser, History, CheckCircle2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
@@ -30,33 +31,44 @@ import {
 function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: number) => void; rotulo: string }) {
   return (
     <div className="flex items-center gap-1.5">
-      <button
+      <motion.button
         type="button"
+        whileTap={{ scale: 0.85 }}
         onClick={() => onChange(Math.max(0, valor - 1))}
         disabled={valor <= 0}
         aria-label={`Diminuir ${rotulo}`}
         className="tap flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 active:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
       >
         <Minus className="size-3.5" aria-hidden="true" />
-      </button>
-      <input
-        type="number"
-        inputMode="numeric"
-        min={0}
-        value={valor === 0 ? "" : valor}
-        onChange={(e) => onChange(Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
-        placeholder="0"
-        aria-label={rotulo}
-        className="h-8 w-14 rounded-lg border border-input bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
-      />
-      <button
+      </motion.button>
+      <div className="relative h-8 w-14 overflow-hidden">
+        <AnimatePresence mode="popLayout" initial={false}>
+          <motion.input
+            key={valor}
+            type="number"
+            inputMode="numeric"
+            min={0}
+            initial={{ y: 10, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -10, opacity: 0 }}
+            transition={{ duration: 0.14 }}
+            value={valor === 0 ? "" : valor}
+            onChange={(e) => onChange(Math.max(0, Math.trunc(Number(e.target.value) || 0)))}
+            placeholder="0"
+            aria-label={rotulo}
+            className="absolute inset-0 h-8 w-14 rounded-lg border border-input bg-background text-center text-sm font-semibold tabular-nums text-foreground outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
+          />
+        </AnimatePresence>
+      </div>
+      <motion.button
         type="button"
+        whileTap={{ scale: 0.85 }}
         onClick={() => onChange(valor + 1)}
         aria-label={`Aumentar ${rotulo}`}
         className="tap flex size-8 items-center justify-center rounded-lg border border-input bg-background text-foreground transition-colors hover:border-primary/50 active:bg-muted"
       >
         <Plus className="size-3.5" aria-hidden="true" />
-      </button>
+      </motion.button>
     </div>
   )
 }
@@ -88,7 +100,13 @@ function GrupoDoDia({ tipo, pesoTotalG, itens }: { tipo: TipoMassa; pesoTotalG: 
   const totalLatas = itens.reduce((soma, i) => soma + calcularLatas(i), 0)
 
   return (
-    <div className="rounded-xl border border-border bg-background p-4">
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.96 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2 }}
+      className="rounded-xl border border-border bg-background p-4"
+    >
       <div className="mb-2 flex flex-wrap items-center justify-between gap-1.5">
         <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[tipo].nome}</h3>
         <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
@@ -113,7 +131,7 @@ function GrupoDoDia({ tipo, pesoTotalG, itens }: { tipo: TipoMassa; pesoTotalG: 
           {totalLatas} {totalLatas === 1 ? "assadeira" : "assadeiras"}
         </span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -129,7 +147,14 @@ function LinhaItem({
   const latas = calcularLatas(item)
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border border-border bg-background p-2.5 print:hidden">
+    <motion.div
+      layout
+      initial={{ opacity: 0, height: 0, y: -8 }}
+      animate={{ opacity: 1, height: "auto", y: 0 }}
+      exit={{ opacity: 0, height: 0, y: -8 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+      className="flex flex-col gap-2 overflow-hidden rounded-lg border border-border bg-background p-2.5 print:hidden"
+    >
       <div className="flex items-center gap-2">
         <Select
           value={item.sabor}
@@ -180,7 +205,7 @@ function LinhaItem({
           {latas} {latas === 1 ? "assadeira" : "assadeiras"}
         </span>
       </div>
-    </div>
+    </motion.div>
   )
 }
 
@@ -188,10 +213,12 @@ export function CardDia({
   dia,
   onChange,
   onRemover,
+  indice = 0,
 }: {
   dia: DiaProducao
   onChange: (dia: DiaProducao) => void
   onRemover: () => void
+  indice?: number
 }) {
   const grupos = agruparPorTipo(dia.itens)
 
@@ -203,40 +230,55 @@ export function CardDia({
   }
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 print:break-inside-avoid">
+    <motion.section
+      layout
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -16, transition: { duration: 0.15 } }}
+      transition={{ duration: 0.25, delay: Math.min(indice, 6) * 0.05 }}
+      className="rounded-2xl border border-border bg-card p-5 print:break-inside-avoid"
+    >
       <div className="mb-4 flex items-center gap-2">
         <p className="font-heading min-w-0 flex-1 text-base font-semibold text-card-foreground">{formatarDiaProducao(dia.data)}</p>
-        <Button variant="ghost" size="sm" onClick={onRemover} className="tap shrink-0 gap-1.5 text-destructive print:hidden">
-          <Trash2 className="size-3.5" aria-hidden="true" />
-          <span className="hidden sm:inline">Remover dia</span>
-        </Button>
+        <motion.div whileTap={{ scale: 0.95 }}>
+          <Button variant="ghost" size="sm" onClick={onRemover} className="tap shrink-0 gap-1.5 text-destructive print:hidden">
+            <Trash2 className="size-3.5" aria-hidden="true" />
+            <span className="hidden sm:inline">Remover dia</span>
+          </Button>
+        </motion.div>
       </div>
 
       {grupos.length === 0 ? (
         <p className="text-sm text-muted-foreground print:hidden">Nenhum item adicionado ainda.</p>
       ) : (
         <div className="mb-4 grid gap-3 sm:grid-cols-2">
-          {grupos.map((g) => (
-            <GrupoDoDia key={g.tipo} tipo={g.tipo} pesoTotalG={g.pesoTotalG} itens={g.itens} />
-          ))}
+          <AnimatePresence initial={false}>
+            {grupos.map((g) => (
+              <GrupoDoDia key={g.tipo} tipo={g.tipo} pesoTotalG={g.pesoTotalG} itens={g.itens} />
+            ))}
+          </AnimatePresence>
         </div>
       )}
 
       <div className="flex flex-col gap-2 print:hidden">
-        {dia.itens.map((item) => (
-          <LinhaItem key={item.id} item={item} onChange={atualizarItem} onRemover={() => removerItem(item.id)} />
-        ))}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => onChange({ ...dia, itens: [...dia.itens, novoItem()] })}
-          className="tap w-fit gap-1.5"
-        >
-          <Plus className="size-3.5" aria-hidden="true" />
-          Adicionar item
-        </Button>
+        <AnimatePresence initial={false}>
+          {dia.itens.map((item) => (
+            <LinhaItem key={item.id} item={item} onChange={atualizarItem} onRemover={() => removerItem(item.id)} />
+          ))}
+        </AnimatePresence>
+        <motion.div whileTap={{ scale: 0.97 }} className="w-fit">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onChange({ ...dia, itens: [...dia.itens, novoItem()] })}
+            className="tap w-fit gap-1.5"
+          >
+            <Plus className="size-3.5" aria-hidden="true" />
+            Adicionar item
+          </Button>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   )
 }
 
@@ -330,14 +372,30 @@ export function ProducaoCalculadora() {
       <header className="border-b border-border bg-card print:hidden">
         <div className="mx-auto flex max-w-4xl flex-col gap-3 px-4 py-5">
           <div className="flex items-center gap-3">
-            <span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+            <motion.span
+              initial={{ scale: 0.6, rotate: -12, opacity: 0 }}
+              animate={{ scale: 1, rotate: 0, opacity: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 18 }}
+              className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground"
+            >
               <Wheat className="size-5" aria-hidden="true" />
-            </span>
+            </motion.span>
             <div className="min-w-0 flex-1">
               <h1 className="font-heading text-xl font-bold text-card-foreground">Planejamento de Produção</h1>
               <p className="text-sm text-muted-foreground">
                 Divide a produção por dia e calcula os ingredientes da massa base
-                {salvando && <span className="ml-2 text-xs text-muted-foreground/70">Salvando…</span>}
+                <AnimatePresence>
+                  {salvando && (
+                    <motion.span
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="ml-2 text-xs text-muted-foreground/70"
+                    >
+                      Salvando…
+                    </motion.span>
+                  )}
+                </AnimatePresence>
               </p>
             </div>
             <Link
@@ -349,18 +407,28 @@ export function ProducaoCalculadora() {
             </Link>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:justify-end">
-            <Button variant="outline" onClick={() => setCalendarioAberto(true)} className="tap gap-2">
-              <CalendarPlus className="size-4" aria-hidden="true" />
-              Selecionar dias
-            </Button>
-            <Button variant="outline" onClick={limparTudo} disabled={dias.length === 0} className="tap gap-2">
-              <Eraser className="size-4" aria-hidden="true" />
-              Limpar tudo
-            </Button>
-            <Button onClick={salvar} disabled={dias.length === 0 || salvandoProducao} className="tap col-span-2 gap-2 sm:col-span-1">
-              <Save className="size-4" aria-hidden="true" />
-              {salvandoProducao ? "Salvando…" : "Salvar"}
-            </Button>
+            <motion.div whileTap={{ scale: 0.96 }}>
+              <Button variant="outline" onClick={() => setCalendarioAberto(true)} className="tap gap-2">
+                <CalendarPlus className="size-4" aria-hidden="true" />
+                Selecionar dias
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.96 }}>
+              <Button variant="outline" onClick={limparTudo} disabled={dias.length === 0} className="tap gap-2">
+                <Eraser className="size-4" aria-hidden="true" />
+                Limpar tudo
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.96 }} className="col-span-2 sm:col-span-1">
+              <Button
+                onClick={salvar}
+                disabled={dias.length === 0 || salvandoProducao}
+                className="tap w-full gap-2"
+              >
+                <Save className="size-4" aria-hidden="true" />
+                {salvandoProducao ? "Salvando…" : "Salvar"}
+              </Button>
+            </motion.div>
           </div>
         </div>
       </header>
@@ -374,22 +442,36 @@ export function ProducaoCalculadora() {
 
       <Dialog open={popupAberto} onOpenChange={(aberto) => !aberto && fecharPopup()}>
         <DialogContent className="sm:max-w-sm">
-          <DialogHeader>
+          <DialogHeader className="items-center text-center">
+            <motion.span
+              initial={{ scale: 0, rotate: -45 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 260, damping: 16, delay: 0.05 }}
+              className="mb-1 flex size-14 items-center justify-center rounded-full bg-primary/10 text-primary"
+            >
+              <CheckCircle2 className="size-8" aria-hidden="true" />
+            </motion.span>
             <DialogTitle className="font-heading">Produção salva!</DialogTitle>
             <DialogDescription>O que você quer fazer agora?</DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Button onClick={gerarPDFDoPopup} className="tap justify-start gap-2">
-              <FileDown className="size-4" aria-hidden="true" />
-              Gerar PDF
-            </Button>
-            <Button variant="outline" onClick={imprimirDoPopup} className="tap justify-start gap-2">
-              <Printer className="size-4" aria-hidden="true" />
-              Imprimir
-            </Button>
-            <Button variant="ghost" onClick={fecharPopup} className="tap justify-start gap-2">
-              Fechar
-            </Button>
+            <motion.div whileTap={{ scale: 0.97 }}>
+              <Button onClick={gerarPDFDoPopup} className="tap w-full justify-start gap-2">
+                <FileDown className="size-4" aria-hidden="true" />
+                Gerar PDF
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.97 }}>
+              <Button variant="outline" onClick={imprimirDoPopup} className="tap w-full justify-start gap-2">
+                <Printer className="size-4" aria-hidden="true" />
+                Imprimir
+              </Button>
+            </motion.div>
+            <motion.div whileTap={{ scale: 0.97 }}>
+              <Button variant="ghost" onClick={fecharPopup} className="tap w-full justify-start gap-2">
+                Fechar
+              </Button>
+            </motion.div>
           </div>
         </DialogContent>
       </Dialog>
@@ -400,52 +482,85 @@ export function ProducaoCalculadora() {
         {!carregado ? (
           <p className="py-10 text-center text-sm text-muted-foreground">Carregando…</p>
         ) : dias.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-border bg-card p-10 text-center print:hidden">
-            <Wheat className="mx-auto mb-3 size-8 text-muted-foreground" aria-hidden="true" />
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+            className="rounded-2xl border border-dashed border-border bg-card p-10 text-center print:hidden"
+          >
+            <motion.div
+              animate={{ y: [0, -6, 0] }}
+              transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+              className="mx-auto mb-3 flex size-14 items-center justify-center rounded-2xl bg-primary/10"
+            >
+              <Wheat className="size-7 text-primary" aria-hidden="true" />
+            </motion.div>
             <p className="font-heading text-base font-semibold text-card-foreground">Nenhum dia selecionado</p>
             <p className="mt-1 mb-4 text-sm text-muted-foreground">
               Selecione pelo menos 1 dia no calendário pra começar o planejamento.
             </p>
-            <Button onClick={() => setCalendarioAberto(true)} className="tap gap-2">
-              <CalendarPlus className="size-4" aria-hidden="true" />
-              Selecionar dias de produção
-            </Button>
-          </div>
+            <motion.div whileTap={{ scale: 0.96 }} className="inline-block">
+              <Button onClick={() => setCalendarioAberto(true)} className="tap gap-2">
+                <CalendarPlus className="size-4" aria-hidden="true" />
+                Selecionar dias de produção
+              </Button>
+            </motion.div>
+          </motion.div>
         ) : (
           <>
-            <div className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="mb-5 flex items-start gap-2 rounded-2xl border border-sky-200 bg-sky-50 p-3.5 text-sm text-sky-900"
+            >
               <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
               <p>
                 O cálculo cobre só a <b>massa base</b> de cada receita. Ingredientes de recheio/cobertura por sabor (canela,
                 chocolate, doce de leite, queijo, etc.) não entram na conta — as proporções deles não foram informadas.
               </p>
-            </div>
+            </motion.div>
 
             <div className="flex flex-col gap-4">
-              {dias.map((dia) => (
-                <CardDia key={dia.id} dia={dia} onChange={atualizarDia} onRemover={() => removerDia(dia.id)} />
-              ))}
+              <AnimatePresence initial={false}>
+                {dias.map((dia, indice) => (
+                  <CardDia key={dia.id} dia={dia} indice={indice} onChange={atualizarDia} onRemover={() => removerDia(dia.id)} />
+                ))}
+              </AnimatePresence>
             </div>
 
             {totaisSemana.length > 0 && (
-              <section className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid">
+              <motion.section
+                layout
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-6 rounded-2xl border border-primary/30 bg-primary/5 p-5 print:break-inside-avoid"
+              >
                 <h2 className={cn("mb-4 font-heading text-base font-semibold text-card-foreground")}>
                   Total do período (todos os dias somados)
                 </h2>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  {totaisSemana.map((g) => (
-                    <div key={g.tipo} className="rounded-xl border border-border bg-background p-4">
-                      <div className="mb-2 flex items-center justify-between">
-                        <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[g.tipo].nome}</h3>
-                        <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
-                          {formatarPeso(g.pesoTotalG)}
-                        </span>
-                      </div>
-                      <TabelaIngredientes tipo={g.tipo} pesoG={g.pesoTotalG} />
-                    </div>
-                  ))}
+                  <AnimatePresence initial={false}>
+                    {totaisSemana.map((g) => (
+                      <motion.div
+                        layout
+                        key={g.tipo}
+                        initial={{ opacity: 0, scale: 0.96 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.96 }}
+                        className="rounded-xl border border-border bg-background p-4"
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <h3 className="font-heading text-sm font-semibold text-foreground">{RECEITAS[g.tipo].nome}</h3>
+                          <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-xs font-semibold text-primary">
+                            {formatarPeso(g.pesoTotalG)}
+                          </span>
+                        </div>
+                        <TabelaIngredientes tipo={g.tipo} pesoG={g.pesoTotalG} />
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
                 </div>
-              </section>
+              </motion.section>
             )}
           </>
         )}

@@ -1,4 +1,4 @@
-export type TipoMassa = "massa_doce" | "pao_abobora"
+export type TipoMassa = "massa_doce" | "pao_abobora" | "brioche"
 
 type Ingrediente = { chave: string; nome: string; gramas: number }
 type ReceitaBase = { nome: string; ingredientes: Ingrediente[] }
@@ -34,11 +34,29 @@ export const RECEITAS: Record<TipoMassa, ReceitaBase> = {
       { chave: "sal", nome: "Sal", gramas: 5 },
     ],
   },
+  // Baker's percentage informado pela equipe (base = farinha 100%): açúcar 16%, sal 1%, PC 0,3%,
+  // ovos 24%, leite 10%, gelo 10%, margarina 20%, fermento 4% — soma 185,3%, batendo com a receita
+  // de referência (1 bolinha de 90g crua ≈ 90,1g somando os ingredientes abaixo).
+  brioche: {
+    nome: "Brioche",
+    ingredientes: [
+      { chave: "farinha", nome: "Farinha", gramas: 100 },
+      { chave: "acucar", nome: "Açúcar", gramas: 16 },
+      { chave: "margarina", nome: "Margarina", gramas: 20 },
+      { chave: "ovos", nome: "Ovos", gramas: 24 },
+      { chave: "leite", nome: "Leite", gramas: 10 },
+      { chave: "gelo", nome: "Gelo", gramas: 10 },
+      { chave: "fermento", nome: "Fermento fresco", gramas: 4 },
+      { chave: "sal", nome: "Sal", gramas: 1 },
+      { chave: "pc", nome: "PC (conservante)", gramas: 0.3 },
+    ],
+  },
 }
 
 export const TIPOS_MASSA: { valor: TipoMassa; nome: string }[] = [
   { valor: "massa_doce", nome: "Massa doce" },
   { valor: "pao_abobora", nome: "Pão de abóbora" },
+  { valor: "brioche", nome: "Brioche" },
 ]
 
 function pesoBase(tipo: TipoMassa): number {
@@ -112,6 +130,9 @@ export const PAES: Pao[] = [
   { nome: "Pão de Queijo e Orégano", tipo: "massa_doce", pesoUnidadeG: 85 },
   { nome: "Pão de Goiabada e Queijo", tipo: "massa_doce", pesoUnidadeG: 85 },
   { nome: "Pão de Abóbora", tipo: "pao_abobora", pesoUnidadeG: 30 },
+  { nome: "Brioche", tipo: "brioche", pesoUnidadeG: 90 },
+  { nome: "Pão de Goiabada e Queijo (Buffet)", tipo: "massa_doce", pesoUnidadeG: 170 },
+  { nome: "Pão Doce de Leite (Buffet)", tipo: "massa_doce", pesoUnidadeG: 170 },
 ]
 
 export function buscarPao(nome: string): Pao {

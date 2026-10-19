@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
+import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, FileDown, History, ChevronDown, Pencil, Trash2, Save, X, Printer } from "lucide-react"
 import { getProducoesConcluidas, atualizarProducaoConcluida, excluirProducao, type ProducaoConcluida } from "@/lib/producao-api"
 import { exportarProducaoPDF } from "@/lib/export-producao"
@@ -77,7 +78,7 @@ function DetalheProducao({ producao }: { producao: ProducaoConcluida }) {
   )
 }
 
-function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onMudou: () => void }) {
+function ItemHistorico({ producao, onMudou, indice = 0 }: { producao: ProducaoConcluida; onMudou: () => void; indice?: number }) {
   const [aberto, setAberto] = useState(false)
   const [editando, setEditando] = useState(false)
   const [diasEditados, setDiasEditados] = useState<DiaProducao[]>(producao.dias)
@@ -134,7 +135,12 @@ function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onM
   const removerDiaEditado = (id: string) => setDiasEditados((atual) => atual.filter((d) => d.id !== id))
 
   return (
-    <details
+    <motion.details
+      layout
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -12 }}
+      transition={{ duration: 0.22, delay: Math.min(indice, 8) * 0.04 }}
       open={aberto}
       onToggle={(e) => setAberto(e.currentTarget.open)}
       data-imprimir-ativo={imprimindo ? "" : undefined}
@@ -232,7 +238,7 @@ function ItemHistorico({ producao, onMudou }: { producao: ProducaoConcluida; onM
       ) : (
         <DetalheProducao producao={producao} />
       )}
-    </details>
+    </motion.details>
   )
 }
 
@@ -273,9 +279,11 @@ export function ProducaoHistorico() {
           </div>
         ) : (
           <div className="flex flex-col gap-3">
-            {producoes.map((p) => (
-              <ItemHistorico key={p.id} producao={p} onMudou={() => mutate()} />
-            ))}
+            <AnimatePresence initial={false}>
+              {producoes.map((p, indice) => (
+                <ItemHistorico key={p.id} producao={p} indice={indice} onMudou={() => mutate()} />
+              ))}
+            </AnimatePresence>
           </div>
         )}
       </main>
