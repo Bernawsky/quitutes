@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useState } from "react"
-import { WifiOff } from "lucide-react"
+import { WifiOff, Wheat } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { usePousadaSessao } from "@/hooks/use-pousada"
 import { PousadaLogin } from "@/components/pousada-login"
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { getPousadaPorSlug } from "@/lib/pousadas-api"
 import { encerrarSessao } from "@/lib/supabase/client"
 import { rotaPorEmailDeEquipe } from "@/lib/contas-equipe"
+import { SOMENTE_PRODUCAO } from "@/lib/manutencao"
 import type { Pousada } from "@/lib/pousadas"
 
 /** Portal de pedidos: exige login da pousada (Supabase Auth) e reage à sessão automaticamente. */
@@ -86,6 +87,28 @@ export function PedidosPortal({ slug }: { slug?: string }) {
 
   if (!ativa) {
     return <PousadaLogin {...(pousadaFixa ? { pousadaFixa } : {})} />
+  }
+
+  // Modo manutenção (ver lib/manutencao.ts): o middleware já bloqueia a navegação pra outras
+  // rotas, mas o login de pousada nunca navega pra fora de "/" — sem isso, a pousada logada
+  // continuaria vendo o app de pedidos normalmente aqui mesmo.
+  if (SOMENTE_PRODUCAO) {
+    return (
+      <div className="flex min-h-svh flex-col items-center justify-center gap-4 bg-background px-6 text-center">
+        <span className="flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Wheat className="size-6" aria-hidden="true" />
+        </span>
+        <div className="flex flex-col gap-1">
+          <p className="font-heading text-lg font-semibold text-foreground">Sistema em manutenção</p>
+          <p className="max-w-xs text-sm text-muted-foreground">
+            Os pedidos estão temporariamente indisponíveis. Voltamos em breve.
+          </p>
+        </div>
+        <Button variant="outline" onClick={() => void sair()} className="tap min-h-11">
+          Sair
+        </Button>
+      </div>
+    )
   }
 
   return <ReservasApp pousada={ativa} onSair={sair} />

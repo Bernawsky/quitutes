@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { SOMENTE_PRODUCAO } from "@/lib/manutencao"
 
 /** Uma entrada de cookiesToSet conta como "apagar" quando o valor fica vazio ou a validade expira. */
 function ehRemocaoDeCookie(value: string, options?: { maxAge?: number; expires?: Date }): boolean {
@@ -9,9 +10,23 @@ function ehRemocaoDeCookie(value: string, options?: { maxAge?: number; expires?:
   return false
 }
 
-// Mantém a sessão do Supabase Auth atualizada em cada requisição
-// (necessário para que as Server Actions/Server Components vejam o usuário logado).
+// MODO MANUTENÇÃO (ver lib/manutencao.ts): só a ferramenta de produção (e o login, que ela
+// exige) fica no ar — o resto do site redireciona pra lá.
+const ROTAS_LIBERADAS_EM_MANUTENCAO = ["/", "/producao"]
+
+function liberadaEmManutencao(pathname: string): boolean {
+  if (pathname.startsWith("/api/")) return true
+  return ROTAS_LIBERADAS_EM_MANUTENCAO.some((rota) => pathname === rota || pathname.startsWith(`${rota}/`))
+}
+
 export async function middleware(request: NextRequest) {
+  if (SOMENTE_PRODUCAO) {
+    const { pathname } = request.nextUrl
+    if (!liberadaEmManutencao(pathname)) {
+      return NextResponse.redirect(new URL("/producao", request.url))
+    }
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
@@ -53,7 +68,17 @@ export async function middleware(request: NextRequest) {
     },
   )
 
-  await supabase.auth.getUser()
+  // A causa real da página "caindo": supabase.auth.getUser() faz uma chamada de rede pro
+  // Supabase, e quando essa chamada falha (AuthRetryableFetchError, "fetch failed") o supabase-js
+  // fica tentando de novo sozinho — sem limite de tempo nosso, isso passava dos 25s que a Vercel
+  // dá pro middleware, e a função era encerrada à força (é esse o erro que aparecia pro usuário
+  // como a página travando/caindo). Agora, se o Supabase não responder rápido, o middleware
+  // desiste e segue em frente sem bloquear a navegação — os guards de página (exigirAdminServer
+  // etc.) continuam checando a sessão de verdade depois.
+  await Promise.race([
+    supabase.auth.getUser().catch(() => null),
+    new Promise((resolve) => setTimeout(resolve, 8000)),
+  ])
 
   return response
 }
