@@ -38,8 +38,9 @@ import {
   calcularLatas,
   formatarDiaProducao,
   formatarPeso,
-  novoDia,
+  novoDiaVazio,
   novoItem,
+  novoItemDe,
   TIPOS_MASSA,
   type DiaProducao,
   type ItemProducao,
@@ -439,13 +440,15 @@ export function ProducaoCalculadora() {
   function aplicarSelecaoDias(datas: string[]) {
     const existentesPorData = new Map(dias.map((d) => [d.data, d]))
     const novasDatas = datas.filter((data) => !existentesPorData.has(data))
-    const resultado = datas.map((data) => existentesPorData.get(data) ?? novoDia(data)).sort((a, b) => a.data.localeCompare(b.data))
+    // Dia novo nasce sem item nenhum — a escolha de qual pão entra primeiro é feita no pop-up
+    // logo em seguida, em vez de já cair em Massa doce/Pão de Canela por padrão.
+    const resultado = datas
+      .map((data) => existentesPorData.get(data) ?? novoDiaVazio(data))
+      .sort((a, b) => a.data.localeCompare(b.data))
 
     setDias(resultado)
     setCalendarioAberto(false)
 
-    // Dia(s) novo(s) já nascem com um primeiro item (o padrão do catálogo) — se vier mais de um
-    // dia de uma vez, pergunta qual pão vai ser esse primeiro item em vez de deixar escondido.
     if (novasDatas.length > 0) {
       setDatasNovas(novasDatas)
       setEscolhaInicialAberta(true)
@@ -454,11 +457,7 @@ export function ProducaoCalculadora() {
 
   function escolherPrimeiroItem(pao: Pao) {
     setDias((atual) =>
-      atual.map((dia) => {
-        if (!datasNovas.includes(dia.data) || dia.itens.length === 0) return dia
-        const [primeiro, ...resto] = dia.itens
-        return { ...dia, itens: [{ ...primeiro, sabor: pao.nome, tipo: pao.tipo, pesoUnidadeG: pao.pesoUnidadeG }, ...resto] }
-      }),
+      atual.map((dia) => (datasNovas.includes(dia.data) ? { ...dia, itens: [novoItemDe(pao)] } : dia)),
     )
     setEscolhaInicialAberta(false)
     setDatasNovas([])

@@ -168,13 +168,19 @@ export function formatarDiaProducao(data: string): string {
   return `${diaSemanaCapitalizado}, ${dataLocal.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}`
 }
 
-export function novoItem(): ItemProducao {
-  const primeiroPao = PAES[0]
-  return { id: gerarId(), tipo: primeiroPao.tipo, sabor: primeiroPao.nome, unidades: 1, pesoUnidadeG: primeiroPao.pesoUnidadeG }
+export function novoItemDe(pao: Pao): ItemProducao {
+  return { id: gerarId(), tipo: pao.tipo, sabor: pao.nome, unidades: 1, pesoUnidadeG: pao.pesoUnidadeG }
 }
 
-export function novoDia(data: string): DiaProducao {
-  return { id: gerarId(), data, itens: [novoItem()] }
+export function novoItem(): ItemProducao {
+  return novoItemDe(PAES[0])
+}
+
+/** Dia sem nenhum item ainda — usado quando a escolha do primeiro pão é perguntada à parte (ver
+ * o pop-up de primeiro item em producao-calculadora.tsx), pra não nascer com Massa doce por
+ * padrão antes da pessoa escolher. */
+export function novoDiaVazio(data: string): DiaProducao {
+  return { id: gerarId(), data, itens: [] }
 }
 
 /** Agrupa os itens de um dia por tipo de massa, somando o peso total de cada grupo. */
