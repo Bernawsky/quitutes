@@ -3,9 +3,26 @@
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
 import { motion, AnimatePresence } from "framer-motion"
-import { Wheat, Plus, Minus, Trash2, Printer, Info, CalendarPlus, FileDown, Save, Eraser, History, CheckCircle2 } from "lucide-react"
+import {
+  Wheat,
+  Plus,
+  Minus,
+  Trash2,
+  Printer,
+  Info,
+  CalendarPlus,
+  FileDown,
+  Save,
+  Eraser,
+  History,
+  CheckCircle2,
+  Croissant,
+  CakeSlice,
+  ChevronDown,
+  Check,
+  Scale,
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { CalendarioMulti } from "@/components/calendario-multi"
 import { cn } from "@/lib/utils"
@@ -23,8 +40,10 @@ import {
   formatarPeso,
   novoDia,
   novoItem,
+  TIPOS_MASSA,
   type DiaProducao,
   type ItemProducao,
+  type Pao,
   type TipoMassa,
 } from "@/lib/producao"
 
@@ -73,11 +92,123 @@ function Stepper({ valor, onChange, rotulo }: { valor: number; onChange: (v: num
   )
 }
 
-function BadgeMassa({ tipo }: { tipo: TipoMassa }) {
+const ICONE_MASSA: Record<TipoMassa, typeof Wheat> = {
+  massa_doce: Wheat,
+  pao_abobora: CakeSlice,
+  brioche: Croissant,
+}
+
+function IconeMassa({ tipo, className }: { tipo: TipoMassa; className?: string }) {
+  const Icone = ICONE_MASSA[tipo] ?? Wheat
+  return <Icone className={className} aria-hidden="true" />
+}
+
+/**
+ * Grade de pães agrupada por tipo de massa, com animação de entrada escalonada por grupo.
+ * Reaproveitada no picker de cada item (SeletorPao) e no pop-up de primeiro item do dia.
+ */
+function GradePaes({ valorAtual, onEscolher }: { valorAtual?: string; onEscolher: (pao: Pao) => void }) {
+  const grupos = TIPOS_MASSA.filter((t) => PAES.some((p) => p.tipo === t.valor))
+
   return (
-    <span className="shrink-0 rounded-md bg-accent/40 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-accent-foreground uppercase">
-      {RECEITAS[tipo].nome}
-    </span>
+    <div className="flex max-h-[60vh] flex-col gap-4 overflow-y-auto pb-1">
+      {grupos.map((grupo, indiceGrupo) => (
+        <motion.div
+          key={grupo.valor}
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.18, delay: indiceGrupo * 0.05 }}
+        >
+          <p className="mb-1.5 px-1 text-[11px] font-bold tracking-wide text-muted-foreground uppercase">{grupo.nome}</p>
+          <div className="flex flex-col gap-1">
+            {PAES.filter((p) => p.tipo === grupo.valor).map((p) => {
+              const selecionado = p.nome === valorAtual
+              return (
+                <motion.button
+                  key={p.nome}
+                  type="button"
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => onEscolher(p)}
+                  className={cn(
+                    "tap flex items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
+                    selecionado
+                      ? "border-primary bg-primary/10"
+                      : "border-transparent bg-muted/60 hover:border-primary/30 hover:bg-muted",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "flex size-9 shrink-0 items-center justify-center rounded-lg",
+                      selecionado ? "bg-primary text-primary-foreground" : "bg-background text-primary",
+                    )}
+                  >
+                    <IconeMassa tipo={p.tipo} className="size-4.5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block truncate text-sm font-semibold text-foreground">{p.nome}</span>
+                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Scale className="size-3" aria-hidden="true" />
+                      {p.pesoUnidadeG}g
+                    </span>
+                  </span>
+                  {selecionado && <Check className="size-4 shrink-0 text-primary" aria-hidden="true" />}
+                </motion.button>
+              )
+            })}
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  )
+}
+
+/**
+ * Picker de pão em cards (em vez de um <select> nativo): abre numa folha com os pães agrupados
+ * por tipo de massa, cada um com ícone, peso e um check no selecionado — pensado pra ficar fácil
+ * de bater o olho e escolher no tablet da cozinha, sem parecer um formulário de admin genérico.
+ */
+function SeletorPao({ valor, onEscolher }: { valor: string; onEscolher: (pao: Pao) => void }) {
+  const [aberto, setAberto] = useState(false)
+  const paoAtual = buscarPao(valor)
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setAberto(true)}
+        className="tap group flex min-w-0 flex-1 items-center gap-2.5 rounded-xl border border-input bg-background py-1.5 pr-3 pl-1.5 text-left transition-colors hover:border-primary/50 active:bg-muted"
+      >
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+          <IconeMassa tipo={paoAtual.tipo} className="size-4.5" />
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-semibold text-foreground">{paoAtual.nome}</span>
+          <span className="block text-xs text-muted-foreground">
+            {RECEITAS[paoAtual.tipo].nome} · {paoAtual.pesoUnidadeG}g
+          </span>
+        </span>
+        <ChevronDown
+          className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground"
+          aria-hidden="true"
+        />
+      </button>
+
+      <Dialog open={aberto} onOpenChange={setAberto}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Escolher pão</DialogTitle>
+            <DialogDescription>Toque num pão pra trocar o item.</DialogDescription>
+          </DialogHeader>
+          <GradePaes
+            valorAtual={valor}
+            onEscolher={(p) => {
+              onEscolher(p)
+              setAberto(false)
+            }}
+          />
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }
 
@@ -156,34 +287,19 @@ function LinhaItem({
       className="flex flex-col gap-2 overflow-hidden rounded-lg border border-border bg-background p-2.5 print:hidden"
     >
       <div className="flex items-center gap-2">
-        <Select
-          value={item.sabor}
-          onValueChange={(v) => {
-            if (!v) return
-            const pao = buscarPao(v)
-            onChange({ ...item, sabor: pao.nome, tipo: pao.tipo, pesoUnidadeG: pao.pesoUnidadeG })
-          }}
-        >
-          <SelectTrigger className="h-9 min-w-0 flex-1 text-xs">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PAES.map((p) => (
-              <SelectItem key={p.nome} value={p.nome}>
-                {p.nome}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <BadgeMassa tipo={item.tipo} />
-        <button
+        <SeletorPao
+          valor={item.sabor}
+          onEscolher={(pao) => onChange({ ...item, sabor: pao.nome, tipo: pao.tipo, pesoUnidadeG: pao.pesoUnidadeG })}
+        />
+        <motion.button
           type="button"
+          whileTap={{ scale: 0.85 }}
           onClick={onRemover}
           aria-label="Remover item"
           className="tap flex size-9 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="size-4" aria-hidden="true" />
-        </button>
+        </motion.button>
       </div>
       <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
         <div className="flex items-center gap-1.5">
@@ -289,6 +405,8 @@ export function ProducaoCalculadora() {
   const [calendarioAberto, setCalendarioAberto] = useState(false)
   const [salvandoProducao, setSalvandoProducao] = useState(false)
   const [popupAberto, setPopupAberto] = useState(false)
+  const [escolhaInicialAberta, setEscolhaInicialAberta] = useState(false)
+  const [datasNovas, setDatasNovas] = useState<string[]>([])
   const timeoutSalvar = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -319,11 +437,31 @@ export function ProducaoCalculadora() {
   const removerDia = (id: string) => setDias((atual) => atual.filter((d) => d.id !== id))
 
   function aplicarSelecaoDias(datas: string[]) {
-    setDias((atual) => {
-      const existentesPorData = new Map(atual.map((d) => [d.data, d]))
-      return datas.map((data) => existentesPorData.get(data) ?? novoDia(data)).sort((a, b) => a.data.localeCompare(b.data))
-    })
+    const existentesPorData = new Map(dias.map((d) => [d.data, d]))
+    const novasDatas = datas.filter((data) => !existentesPorData.has(data))
+    const resultado = datas.map((data) => existentesPorData.get(data) ?? novoDia(data)).sort((a, b) => a.data.localeCompare(b.data))
+
+    setDias(resultado)
     setCalendarioAberto(false)
+
+    // Dia(s) novo(s) já nascem com um primeiro item (o padrão do catálogo) — se vier mais de um
+    // dia de uma vez, pergunta qual pão vai ser esse primeiro item em vez de deixar escondido.
+    if (novasDatas.length > 0) {
+      setDatasNovas(novasDatas)
+      setEscolhaInicialAberta(true)
+    }
+  }
+
+  function escolherPrimeiroItem(pao: Pao) {
+    setDias((atual) =>
+      atual.map((dia) => {
+        if (!datasNovas.includes(dia.data) || dia.itens.length === 0) return dia
+        const [primeiro, ...resto] = dia.itens
+        return { ...dia, itens: [{ ...primeiro, sabor: pao.nome, tipo: pao.tipo, pesoUnidadeG: pao.pesoUnidadeG }, ...resto] }
+      }),
+    )
+    setEscolhaInicialAberta(false)
+    setDatasNovas([])
   }
 
   function limparTudo() {
@@ -439,6 +577,28 @@ export function ProducaoCalculadora() {
         selecionadas={dias.map((d) => d.data)}
         onConcluir={aplicarSelecaoDias}
       />
+
+      <Dialog open={escolhaInicialAberta} onOpenChange={(aberto) => !aberto && setEscolhaInicialAberta(false)}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <motion.span
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 280, damping: 16 }}
+              className="mb-1 flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary"
+            >
+              <Croissant className="size-5" aria-hidden="true" />
+            </motion.span>
+            <DialogTitle>Qual vai ser o primeiro pão?</DialogTitle>
+            <DialogDescription>
+              {datasNovas.length === 1
+                ? `Escolhe o primeiro item de ${formatarDiaProducao(datasNovas[0]).toLowerCase()}.`
+                : `Escolhe o primeiro item pros ${datasNovas.length} dias que você acabou de adicionar.`}
+            </DialogDescription>
+          </DialogHeader>
+          <GradePaes onEscolher={escolherPrimeiroItem} />
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={popupAberto} onOpenChange={(aberto) => !aberto && fecharPopup()}>
         <DialogContent className="sm:max-w-sm">
