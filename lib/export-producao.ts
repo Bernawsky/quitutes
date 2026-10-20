@@ -122,14 +122,11 @@ function escreverGrupo(doc: jsPDF, y: number, grupo: Grupo, mostrarBatida: boole
 }
 
 /**
- * Gera o PDF de uma produção (rascunho atual ou uma produção concluída do histórico) — mesmo conteúdo
- * mostrado na tela, com o mesmo visual (cores da marca, badges, cards), como download real em vez de
- * impressão do navegador.
+ * Monta o documento (sem salvar nem abrir) — reaproveitado tanto pro download quanto pra
+ * impressão, já que os dois precisam do mesmo PDF, só mudando o que acontece com ele no final.
  */
-export function exportarProducaoPDF(dias: DiaProducao[], opcoes?: { titulo?: string; baixarArquivo?: boolean }) {
+function construirDocumentoProducao(dias: DiaProducao[], titulo: string): jsPDF {
   const doc = new jsPDF({ orientation: "portrait" })
-  const titulo = opcoes?.titulo ?? "Planejamento de Produção"
-  const baixarArquivo = opcoes?.baixarArquivo ?? true
 
   doc.setFontSize(17)
   doc.setFont("helvetica", "bold")
@@ -175,8 +172,35 @@ export function exportarProducaoPDF(dias: DiaProducao[], opcoes?: { titulo?: str
     }
   }
 
+  return doc
+}
+
+/**
+ * Gera o PDF de uma produção (rascunho atual ou uma produção concluída do histórico) — mesmo conteúdo
+ * mostrado na tela, com o mesmo visual (cores da marca, badges, cards), como download real em vez de
+ * impressão do navegador.
+ */
+export function exportarProducaoPDF(dias: DiaProducao[], opcoes?: { titulo?: string; baixarArquivo?: boolean }) {
+  const titulo = opcoes?.titulo ?? "Planejamento de Produção"
+  const baixarArquivo = opcoes?.baixarArquivo ?? true
+  const doc = construirDocumentoProducao(dias, titulo)
+
   const nomeArquivo = `producao-${new Date().toISOString().slice(0, 10)}.pdf`
   if (baixarArquivo) doc.save(nomeArquivo)
   const dataUri = doc.output("datauristring")
   return { nomeArquivo, base64: dataUri.slice(dataUri.indexOf(",") + 1) }
+}
+
+/**
+ * "Imprimir": em vez de window.print() + CSS escondendo a tela (que em navegador de celular/PWA
+ * frequentemente ignora o @media print e imprime a tela como está, viraram prints bugados), gera
+ * o mesmo PDF da exportação e abre ele numa aba nova já com o comando de impressão disparado
+ * (autoPrint) — o visualizador de PDF do navegador que cuida da caixa de diálogo de impressão.
+ */
+export function imprimirProducaoPDF(dias: DiaProducao[], opcoes?: { titulo?: string }) {
+  const titulo = opcoes?.titulo ?? "Planejamento de Produção"
+  const doc = construirDocumentoProducao(dias, titulo)
+  doc.autoPrint()
+  const url = doc.output("bloburl")
+  window.open(url, "_blank")
 }

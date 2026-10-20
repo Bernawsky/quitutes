@@ -1,12 +1,12 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import Link from "next/link"
 import useSWR from "swr"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowLeft, FileDown, History, ChevronDown, Pencil, Trash2, Save, X, Printer } from "lucide-react"
 import { getProducoesConcluidas, atualizarProducaoConcluida, excluirProducao, type ProducaoConcluida } from "@/lib/producao-api"
-import { exportarProducaoPDF } from "@/lib/export-producao"
+import { exportarProducaoPDF, imprimirProducaoPDF } from "@/lib/export-producao"
 import {
   agruparPorTipo,
   calcularBatidas,
@@ -84,17 +84,6 @@ function ItemHistorico({ producao, onMudou, indice = 0 }: { producao: ProducaoCo
   const [diasEditados, setDiasEditados] = useState<DiaProducao[]>(producao.dias)
   const [salvando, setSalvando] = useState(false)
   const [excluindo, setExcluindo] = useState(false)
-  const [imprimindo, setImprimindo] = useState(false)
-
-  useEffect(() => {
-    if (!imprimindo) return
-    window.print()
-    const aoTerminar = () => {
-      setImprimindo(false)
-      window.removeEventListener("afterprint", aoTerminar)
-    }
-    window.addEventListener("afterprint", aoTerminar)
-  }, [imprimindo])
 
   function iniciarEdicao() {
     setDiasEditados(producao.dias)
@@ -143,7 +132,6 @@ function ItemHistorico({ producao, onMudou, indice = 0 }: { producao: ProducaoCo
       transition={{ duration: 0.22, delay: Math.min(indice, 8) * 0.04 }}
       open={aberto}
       onToggle={(e) => setAberto(e.currentTarget.open)}
-      data-imprimir-ativo={imprimindo ? "" : undefined}
       className="producao-historico-item rounded-2xl border border-border bg-card p-5 print:break-inside-avoid"
     >
       <summary
@@ -190,10 +178,7 @@ function ItemHistorico({ producao, onMudou, indice = 0 }: { producao: ProducaoCo
             <>
               <button
                 type="button"
-                onClick={() => {
-                  setAberto(true)
-                  setImprimindo(true)
-                }}
+                onClick={() => imprimirProducaoPDF(producao.dias, { titulo: `Produção — ${rotuloPeriodo(producao)}` })}
                 className="tap flex shrink-0 items-center gap-1.5 rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:border-primary/50"
               >
                 <Printer className="size-3.5" aria-hidden="true" />

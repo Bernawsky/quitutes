@@ -27,7 +27,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { CalendarioMulti } from "@/components/calendario-multi"
 import { cn } from "@/lib/utils"
 import { getRascunho, salvarRascunho, concluirProducao } from "@/lib/producao-api"
-import { exportarProducaoPDF } from "@/lib/export-producao"
+import { exportarProducaoPDF, imprimirProducaoPDF } from "@/lib/export-producao"
 import {
   PAES,
   RECEITAS,
@@ -495,13 +495,9 @@ export function ProducaoCalculadora() {
   }
 
   function imprimirDoPopup() {
+    imprimirProducaoPDF(dias)
     setPopupAberto(false)
-    window.print()
-    const aoTerminar = () => {
-      setDias([])
-      window.removeEventListener("afterprint", aoTerminar)
-    }
-    window.addEventListener("afterprint", aoTerminar)
+    setDias([])
   }
 
   return (
