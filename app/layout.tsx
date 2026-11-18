@@ -3,6 +3,7 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import { Toaster } from '@/components/ui/sonner'
 import { TemaSync } from '@/components/tema-sync'
+import { SOMENTE_PRODUCAO } from '@/lib/manutencao'
 import './globals.css'
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' })
@@ -98,7 +99,9 @@ export default function RootLayout({
     <html lang="pt-BR" className={`bg-background ${inter.variable} ${poppins.variable}`}>
       <body className="font-sans antialiased">
         <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
-        <TemaSync />
+        {/* Modo manutenção (ver lib/manutencao.ts): o Supabase foi excluído, então nenhuma página
+            pode mais chamar supabase.auth — TemaSync (via useAuth) chamava isso incondicionalmente. */}
+        {!SOMENTE_PRODUCAO && <TemaSync />}
         {children}
         <Toaster position="top-center" richColors />
         {process.env.NODE_ENV === 'production' && <Analytics />}
